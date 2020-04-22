@@ -42,13 +42,11 @@ func main() {
 
 	camera := scene.NewCamera()
 
-	redish := space.NewVec3(0.7, 0.3, 0.3)
-	greenish := space.NewVec3(0.2, 0.8, 0.2)
-	smallSphere := scene.NewSphere(space.NewVec3(0, 0, -1), 0.5)
-	bigSphere := scene.NewSphere(space.NewVec3(0, -100.5, -1), 100)
-	ball := scene.NewActor(smallSphere, scene.NewLambertian(redish))
-	earth := scene.NewActor(bigSphere, scene.NewLambertian(greenish))
-	world := scene.NewCollection(ball, earth)
+	world := scene.NewCollection()
+	world.Add(scene.NewActor(scene.NewSphere(space.NewVec3(0, 0, -1), 0.5), scene.NewLambertian(space.NewVec3(0.7, 0.3, 0.3))))
+	world.Add(scene.NewActor(scene.NewSphere(space.NewVec3(0, -100.5, -1), 100), scene.NewLambertian(space.NewVec3(0.8, 0.8, 0.0))))
+	world.Add(scene.NewActor(scene.NewSphere(space.NewVec3(1, 0, -1), 0.5), scene.NewMetal(space.NewVec3(0.8, 0.6, 0.2), 0.2)))
+	world.Add(scene.NewActor(scene.NewSphere(space.NewVec3(-1, 0, -1), 0.5), scene.NewMetal(space.NewVec3(0.8, 0.8, 0.8), 1.0)))
 
 	for j := imageHeight - 1; j >= 0; j-- {
 		fmt.Fprintf(os.Stderr, "\rLines remaining: %v", j)

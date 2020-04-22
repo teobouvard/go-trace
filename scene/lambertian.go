@@ -4,7 +4,7 @@ import (
 	"github.com/teobouvard/gotrace/space"
 )
 
-// Lambertian material
+// Lambertian is a diffuse texture
 type Lambertian struct {
 	albedo space.Vec3
 }
@@ -18,11 +18,7 @@ func NewLambertian(albedo space.Vec3) Lambertian {
 
 // Scatter defines how a lambertian material scatters a Ray
 func (l Lambertian) Scatter(ray Ray, record HitRecord) (scatters bool, attenuation space.Vec3, scattered Ray) {
-	if space.Dot(ray.Direction(), record.Normal()) > 0 {
-		scatters = false
-		return
-	}
-	scatters = true
+	scatters = space.Dot(ray.Direction(), record.Normal()) < 0
 	scatterDirection := space.Add(record.Normal(), space.RandLambertian())
 	scattered = NewRay(record.Position(), scatterDirection)
 	attenuation = l.albedo

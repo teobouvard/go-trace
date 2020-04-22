@@ -90,6 +90,11 @@ func Mul(u Vec3, v Vec3) Vec3 {
 	)
 }
 
+// Reflect computes the reflection of v if it hits a surface of normal n
+func Reflect(v Vec3, n Vec3) Vec3 {
+	return Add(v, Neg(Scale(n, 2*Dot(v, n))))
+}
+
 // Unit returns a unit vector from v
 func Unit(v Vec3) Vec3 {
 	return Div(v, v.Norm())
