@@ -21,62 +21,52 @@ func NewVec3(e0 float64, e1 float64, e2 float64) *Vec3 {
 }
 
 // X returns the first component of v
-func (v *Vec3) X() float64 {
+func (v Vec3) X() float64 {
 	return v.e[0]
 }
 
 // Y returns the first component of v
-func (v *Vec3) Y() float64 {
+func (v Vec3) Y() float64 {
 	return v.e[1]
 }
 
 // Z returns the first component of v
-func (v *Vec3) Z() float64 {
+func (v Vec3) Z() float64 {
 	return v.e[2]
 }
 
-// Add performs the addition of other to v
-func (v *Vec3) Add(other *Vec3) {
-	for i := 0; i < 3; i++ {
-		v.e[i] += other.e[i]
+// Add returns the sum of vecs
+func Add(vecs ...*Vec3) *Vec3 {
+	var i float64
+	var j float64
+	var k float64
+	for _, v := range vecs {
+		i += v.e[0]
+		j += v.e[1]
+		k += v.e[2]
 	}
+	return NewVec3(i, j, k)
 }
 
-// Add performs the addition of u and v
-func Add(u *Vec3, v *Vec3) *Vec3 {
-	return NewVec3(u.e[0]+v.e[0], u.e[1]+v.e[1], u.e[2]+v.e[2])
-}
-
-// Sub performs the subtraction of other to v
-func (v *Vec3) Sub(other *Vec3) {
-	for i := 0; i < 3; i++ {
-		v.e[i] -= other.e[i]
+// Sub returns the difference between u and v
+func Sub(vecs ...*Vec3) *Vec3 {
+	var i float64
+	var j float64
+	var k float64
+	for _, v := range vecs {
+		i -= v.e[0]
+		j -= v.e[1]
+		k -= v.e[2]
 	}
+	return NewVec3(i, j, k)
 }
 
-// Sub performs the addition of u and v
-func Sub(u *Vec3, v *Vec3) *Vec3 {
-	return NewVec3(u.e[0]-v.e[0], u.e[1]-v.e[1], u.e[2]-v.e[2])
+// Mul returns v scaled by t
+func Mul(v *Vec3, t float64) *Vec3 {
+	return NewVec3(v.e[0]*t, v.e[1]*t, v.e[2]*t)
 }
 
-// Mul performs a scaling of v by t
-func (v *Vec3) Mul(t float64) {
-	for i := 0; i < 3; i++ {
-		v.e[i] *= t
-	}
-}
-
-// Div performs a scaling of v by 1/t
-func (v *Vec3) Div(t float64) {
-	if t == 0 {
-		panic("Division by zero")
-	}
-	for i := 0; i < 3; i++ {
-		v.e[i] /= t
-	}
-}
-
-// Div performs a scaling of v by 1/t
+// Div returns the scaling of v by 1/t
 func Div(v *Vec3, t float64) *Vec3 {
 	if t == 0 {
 		panic("Division by zero")

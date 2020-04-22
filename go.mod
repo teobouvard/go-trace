@@ -1,3 +1,3 @@
-module github.com/teobouvard/go-trace
+module github.com/teobouvard/gotrace
 
 go 1.14
