@@ -2,27 +2,37 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 
 	"github.com/teobouvard/gotrace/light"
 	"github.com/teobouvard/gotrace/space"
 )
 
-func hitSphere(center *space.Vec3, radius float64, ray *light.Ray) bool {
-	oc := space.Sub(ray.Origin(), center)
+func hitSphere(center *space.Vec3, radius float64, ray *light.Ray) float64 {
+	oc := space.Add(ray.Origin(), space.Neg(center))
 	a := space.Dot(ray.Direction(), ray.Direction())
 	b := 2.0 * space.Dot(oc, ray.Direction())
 	c := space.Dot(oc, oc) - radius*radius
 	discriminant := b*b - 4*a*c
-	return discriminant > 0
+
+	if discriminant < 0 {
+		return -1.0
+	}
+
+	return (-b - math.Sqrt(discriminant)) / (2.0 * a)
 }
 
 func rayColor(ray *light.Ray) *space.Vec3 {
-	if hitSphere(space.NewVec3(0, 0, -1), 0.5, ray) {
-		return space.NewVec3(1, 0, 0)
+	center := space.NewVec3(0, 0, -1)
+	t := hitSphere(center, 0.5, ray)
+	if t > 0.0 {
+		normal := space.Unit(space.Add(ray.At(t), space.Neg(center)))
+		scaled := space.NewVec3(normal.X()+1, normal.Y()+1, normal.Z()+1)
+		return space.Mul(scaled, 0.5)
 	}
 	unitDirection := space.Unit(ray.Direction())
-	t := 0.5 * (unitDirection.Y() + 1.0)
+	t = 0.5 * (unitDirection.Y() + 1.0)
 	c1 := space.Mul(space.NewVec3(1.0, 1.0, 1.0), 1.0-t)
 	c2 := space.Mul(space.NewVec3(0.5, 0.7, 1.0), t)
 	return space.Add(c1, c2)

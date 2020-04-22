@@ -48,17 +48,9 @@ func Add(vecs ...*Vec3) *Vec3 {
 	return NewVec3(i, j, k)
 }
 
-// Sub returns the difference between u and v
-func Sub(vecs ...*Vec3) *Vec3 {
-	var i float64
-	var j float64
-	var k float64
-	for _, v := range vecs {
-		i -= v.e[0]
-		j -= v.e[1]
-		k -= v.e[2]
-	}
-	return NewVec3(i, j, k)
+// Neg returns the opposite of v
+func Neg(v *Vec3) *Vec3 {
+	return Mul(v, -1)
 }
 
 // Mul returns v scaled by t
