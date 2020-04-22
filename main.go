@@ -3,61 +3,64 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
 
-	"github.com/teobouvard/gotrace/light"
+	"github.com/teobouvard/gotrace/scene"
 	"github.com/teobouvard/gotrace/space"
 )
 
-func hitSphere(center *space.Vec3, radius float64, ray *light.Ray) float64 {
-	oc := space.Add(ray.Origin(), space.Neg(center))
-	a := space.Dot(ray.Direction(), ray.Direction())
-	b := 2.0 * space.Dot(oc, ray.Direction())
-	c := space.Dot(oc, oc) - radius*radius
-	discriminant := b*b - 4*a*c
-
-	if discriminant < 0 {
-		return -1.0
+func rayColor(ray scene.Ray, world scene.Collection, depth int) space.Vec3 {
+	if depth <= 0 {
+		// too many scattered bounces, assume absorption
+		return space.NewVec3(0, 0, 0)
 	}
 
-	return (-b - math.Sqrt(discriminant)) / (2.0 * a)
-}
-
-func rayColor(ray *light.Ray) *space.Vec3 {
-	center := space.NewVec3(0, 0, -1)
-	t := hitSphere(center, 0.5, ray)
-	if t > 0.0 {
-		normal := space.Unit(space.Add(ray.At(t), space.Neg(center)))
-		scaled := space.NewVec3(normal.X()+1, normal.Y()+1, normal.Z()+1)
-		return space.Mul(scaled, 0.5)
+	if hit, record := world.Hit(ray, 0.001, math.MaxFloat64); hit {
+		if scatters, attenuation, scattered := record.Material().Scatter(ray, record); scatters {
+			return space.Mul(attenuation, rayColor(scattered, world, depth-1))
+		}
+		// material absorbs all the ray
+		return space.NewVec3(0, 0, 0)
 	}
+
+	// background
 	unitDirection := space.Unit(ray.Direction())
-	t = 0.5 * (unitDirection.Y() + 1.0)
-	c1 := space.Mul(space.NewVec3(1.0, 1.0, 1.0), 1.0-t)
-	c2 := space.Mul(space.NewVec3(0.5, 0.7, 1.0), t)
-	return space.Add(c1, c2)
+	t := 0.5 * (unitDirection.Y() + 1.0)
+	white := space.Scale(space.NewVec3(1.0, 1.0, 1.0), 1.0-t)
+	blue := space.Scale(space.NewVec3(0.5, 0.7, 1.0), t)
+	return space.Add(white, blue)
 }
 
 func main() {
 	imageWidth := 200
 	imageHeight := 100
+	pixelSamples := 100
+	maxBounce := 50
 
 	fmt.Printf("P3\n%v %v\n255\n", imageWidth, imageHeight)
 
-	origin := space.NewVec3(0, 0, 0)
-	lowerLeft := space.NewVec3(-2, -1, -1)
-	horizontal := space.NewVec3(4, 0, 0)
-	vertical := space.NewVec3(0, 2, 0)
+	camera := scene.NewCamera()
+
+	albedo := space.NewVec3(0.8, 0.8, 0.8)
+	smallSphere := scene.NewSphere(space.NewVec3(0, 0, -1), 0.5)
+	bigSphere := scene.NewSphere(space.NewVec3(0, -100.5, -1), 100)
+	ball := scene.NewActor(smallSphere, scene.NewLambertian(albedo))
+	earth := scene.NewActor(bigSphere, scene.NewLambertian(albedo))
+	world := scene.NewCollection(ball, earth)
 
 	for j := imageHeight - 1; j >= 0; j-- {
 		fmt.Fprintf(os.Stderr, "\rLines remaining: %v", j)
 		for i := 0; i < imageWidth; i++ {
-			u := float64(i) / float64(imageWidth)
-			v := float64(j) / float64(imageHeight)
-			dir := space.Add(lowerLeft, space.Mul(horizontal, u), space.Mul(vertical, v))
-			r := light.NewRay(origin, dir)
-			color := rayColor(r)
-			color.WriteColor(os.Stdout)
+			color := space.NewVec3(0, 0, 0)
+			for s := 0; s < pixelSamples; s++ {
+				u := (float64(i) + rand.Float64()) / float64(imageWidth)
+				v := (float64(j) + rand.Float64()) / float64(imageHeight)
+				ray := camera.LookAt(u, v)
+				color = space.Add(color, rayColor(ray, world, maxBounce))
+
+			}
+			color.WriteColor(os.Stdout, pixelSamples)
 		}
 	}
 	fmt.Fprintf(os.Stderr, "\n")
