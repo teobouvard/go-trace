@@ -45,6 +45,7 @@ func (s Sphere) Hit(ray Ray, tMin float64, tMax float64) (hit bool, t float64, p
 			normal = space.Unit(space.Add(pos, space.Neg(s.center)))
 			return
 		}
+		hit = false
 	}
 
 	return

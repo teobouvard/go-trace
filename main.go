@@ -36,17 +36,18 @@ func main() {
 	imageWidth := 200
 	imageHeight := 100
 	pixelSamples := 100
-	maxBounce := 50
+	maxScatter := 50
 
 	fmt.Printf("P3\n%v %v\n255\n", imageWidth, imageHeight)
 
 	camera := scene.NewCamera()
 
-	albedo := space.NewVec3(0.8, 0.8, 0.8)
+	redish := space.NewVec3(0.7, 0.3, 0.3)
+	greenish := space.NewVec3(0.2, 0.8, 0.2)
 	smallSphere := scene.NewSphere(space.NewVec3(0, 0, -1), 0.5)
 	bigSphere := scene.NewSphere(space.NewVec3(0, -100.5, -1), 100)
-	ball := scene.NewActor(smallSphere, scene.NewLambertian(albedo))
-	earth := scene.NewActor(bigSphere, scene.NewLambertian(albedo))
+	ball := scene.NewActor(smallSphere, scene.NewLambertian(redish))
+	earth := scene.NewActor(bigSphere, scene.NewLambertian(greenish))
 	world := scene.NewCollection(ball, earth)
 
 	for j := imageHeight - 1; j >= 0; j-- {
@@ -57,7 +58,7 @@ func main() {
 				u := (float64(i) + rand.Float64()) / float64(imageWidth)
 				v := (float64(j) + rand.Float64()) / float64(imageHeight)
 				ray := camera.LookAt(u, v)
-				color = space.Add(color, rayColor(ray, world, maxBounce))
+				color = space.Add(color, rayColor(ray, world, maxScatter))
 
 			}
 			color.WriteColor(os.Stdout, pixelSamples)
