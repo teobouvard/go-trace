@@ -22,5 +22,7 @@ func (l Lambertian) Scatter(ray Ray, record HitRecord) (scatters bool, attenuati
 	scatterDirection := space.Add(record.Normal(), space.RandLambertian())
 	scattered = NewRay(record.Position(), scatterDirection)
 	attenuation = l.albedo
+	//if scatters {
+	//}
 	return
 }

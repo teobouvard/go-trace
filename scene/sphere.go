@@ -47,6 +47,5 @@ func (s Sphere) Hit(ray Ray, tMin float64, tMax float64) (hit bool, t float64, p
 		}
 		hit = false
 	}
-
 	return
 }

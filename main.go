@@ -13,7 +13,7 @@ import (
 func rayColor(ray scene.Ray, world scene.Collection, depth int) space.Vec3 {
 	if depth <= 0 {
 		// too many scattered bounces, assume absorption
-		return space.NewVec3(0, 0, 0)
+		return space.BLACK
 	}
 
 	if hit, record := world.Hit(ray, 0.001, math.MaxFloat64); hit {
@@ -21,13 +21,13 @@ func rayColor(ray scene.Ray, world scene.Collection, depth int) space.Vec3 {
 			return space.Mul(attenuation, rayColor(scattered, world, depth-1))
 		}
 		// material absorbs all the ray
-		return space.NewVec3(0, 0, 0)
+		return space.BLACK
 	}
 
 	// background
 	unitDirection := space.Unit(ray.Direction())
 	t := 0.5 * (unitDirection.Y() + 1.0)
-	white := space.Scale(space.NewVec3(1.0, 1.0, 1.0), 1.0-t)
+	white := space.Scale(space.WHITE, 1.0-t)
 	blue := space.Scale(space.NewVec3(0.5, 0.7, 1.0), t)
 	return space.Add(white, blue)
 }
@@ -43,10 +43,10 @@ func main() {
 	camera := scene.NewCamera()
 
 	world := scene.NewCollection()
-	world.Add(scene.NewActor(scene.NewSphere(space.NewVec3(0, 0, -1), 0.5), scene.NewLambertian(space.NewVec3(0.7, 0.3, 0.3))))
+	world.Add(scene.NewActor(scene.NewSphere(space.NewVec3(0, 0, -1), 0.5), scene.NewLambertian(space.NewVec3(0.1, 0.2, 0.5))))
 	world.Add(scene.NewActor(scene.NewSphere(space.NewVec3(0, -100.5, -1), 100), scene.NewLambertian(space.NewVec3(0.8, 0.8, 0.0))))
-	world.Add(scene.NewActor(scene.NewSphere(space.NewVec3(1, 0, -1), 0.5), scene.NewMetal(space.NewVec3(0.8, 0.6, 0.2), 0.2)))
-	world.Add(scene.NewActor(scene.NewSphere(space.NewVec3(-1, 0, -1), 0.5), scene.NewMetal(space.NewVec3(0.8, 0.8, 0.8), 1.0)))
+	world.Add(scene.NewActor(scene.NewSphere(space.NewVec3(1, 0, -1), 0.5), scene.NewMetal(space.NewVec3(0.8, 0.6, 0.2), 0.3)))
+	world.Add(scene.NewActor(scene.NewSphere(space.NewVec3(-1, 0, -1), 0.5), scene.NewDielectric(1.5)))
 
 	for j := imageHeight - 1; j >= 0; j-- {
 		fmt.Fprintf(os.Stderr, "\rLines remaining: %v", j)
@@ -59,7 +59,7 @@ func main() {
 				color = space.Add(color, rayColor(ray, world, maxScatter))
 
 			}
-			color.WriteColor(os.Stdout, pixelSamples)
+			fmt.Printf(color.WriteColor(pixelSamples))
 		}
 	}
 	fmt.Fprintf(os.Stderr, "\n")

@@ -2,11 +2,19 @@ package space
 
 import (
 	"fmt"
-	"io"
 	"math"
 	"math/rand"
 
 	"github.com/teobouvard/gotrace/util"
+)
+
+// Colors
+var (
+	BLACK = NewVec3(0, 0, 0)
+	WHITE = NewVec3(1, 1, 1)
+	RED   = NewVec3(1, 0, 0)
+	GREEN = NewVec3(0, 1, 0)
+	BLUE  = NewVec3(0, 0, 1)
 )
 
 // Vec3 defines a 3-dimensional vector
@@ -95,6 +103,15 @@ func Reflect(v Vec3, n Vec3) Vec3 {
 	return Add(v, Neg(Scale(n, 2*Dot(v, n))))
 }
 
+// Refract computes the refraction of v at an interface of reflexive ratio nRatio
+func Refract(v Vec3, n Vec3, nRatio float64) Vec3 {
+	cosTheta := Dot(Neg(v), n)
+	parallel := Scale(Add(v, Scale(n, cosTheta)), nRatio)
+	sqrt := -math.Sqrt(1.0 - parallel.SquareNorm())
+	normal := Scale(n, sqrt)
+	return Add(normal, parallel)
+}
+
 // Unit returns a unit vector from v
 func Unit(v Vec3) Vec3 {
 	return Div(v, v.Norm())
@@ -130,7 +147,7 @@ func RandLambertian() Vec3 {
 }
 
 // WriteColor writes the color of v to f
-func (v Vec3) WriteColor(f io.Writer, samples int) {
+func (v Vec3) WriteColor(samples int) string {
 	colorRange := 256.0
 	minv := 0.0
 	maxv := 0.999
@@ -142,7 +159,17 @@ func (v Vec3) WriteColor(f io.Writer, samples int) {
 	ir := int(colorRange * util.Clamp(r, minv, maxv))
 	ig := int(colorRange * util.Clamp(g, minv, maxv))
 	ib := int(colorRange * util.Clamp(b, minv, maxv))
-	fmt.Fprintf(f, "%v %v %v\n", ir, ig, ib)
+
+	if ir < 0 || ig < 0 || ib < 0 {
+		panic("negative color component")
+	}
+
+	return fmt.Sprintf("%v %v %v\n", ir, ig, ib)
+}
+
+// SameColor compares two Vec3 and return true if they are identical
+func SameColor(u Vec3, v Vec3) bool {
+	return u.WriteColor(1) == v.WriteColor(1)
 }
 
 func (v Vec3) String() string {
