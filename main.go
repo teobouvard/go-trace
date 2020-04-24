@@ -28,7 +28,7 @@ func rayColor(ray Ray, world Collection, depth int) Vec3 {
 }
 
 func main() {
-	rand.Seed(2017)
+	rand.Seed(42)
 	pixelSamples := 100
 	maxScatter := 50
 
@@ -36,8 +36,7 @@ func main() {
 	imageHeight := 100
 
 	aspectRatio := float64(imageWidth) / float64(imageHeight)
-	fov := 90.0
-	//lookFrom := Vec3{0, 0, 0}
+	fov := 60.0
 	lookFrom := Vec3{-2.0, 2.0, 1}
 	lookAt := Vec3{Z: -1.0}
 	up := Vec3{Y: 1}
