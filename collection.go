@@ -1,4 +1,4 @@
-package scene
+package main
 
 // Collection represents a collection of Actors
 type Collection struct {
@@ -23,15 +23,16 @@ func (c *Collection) Add(actors ...Actor) {
 }
 
 // Hit returns the closest hit record if an intersection was found
-func (c Collection) Hit(ray Ray, tMin float64, tMax float64) (bool, HitRecord) {
+func (c Collection) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
 	hitAnything := false
 	closestHit := tMax
-	var closestRecord HitRecord
+	var closestRecord *HitRecord
 
 	for _, actor := range c.actors {
+		// using the closest hit so far as tmax,
 		if hit, record := actor.Hit(ray, tMin, closestHit); hit {
 			closestRecord = record
-			closestHit = record.Distance()
+			closestHit = record.Distance
 			hitAnything = true
 		}
 	}
