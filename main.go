@@ -20,6 +20,6 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	scene := BookScene()
+	scene := MovingSpheres()
 	scene.Render()
 }

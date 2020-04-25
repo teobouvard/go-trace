@@ -2,20 +2,22 @@ package main
 
 import (
 	"math"
+	"math/rand"
 )
 
 // Camera represents the camera of the scene
 type Camera struct {
-	origin     Vec3
-	horizontal Vec3
-	vertical   Vec3
-	corner     Vec3
-	u, v, w    Vec3
-	lensRadius float64
+	origin        Vec3
+	horizontal    Vec3
+	vertical      Vec3
+	corner        Vec3
+	u, v, w       Vec3
+	lensRadius    float64
+	tStart, tStop float64
 }
 
 // NewCamera creates a camera
-func NewCamera(lookFrom Vec3, lookAt Vec3, up Vec3, verticalFOV float64, aspectRatio float64, aperture float64, focusDist float64) Camera {
+func NewCamera(lookFrom, lookAt, up Vec3, verticalFOV, aspectRatio, aperture, focusDist, tStart, tStop float64) Camera {
 	theta := (math.Pi * verticalFOV) / 180.0
 	height := math.Tan(theta / 2.0)
 	width := aspectRatio * height
@@ -38,6 +40,8 @@ func NewCamera(lookFrom Vec3, lookAt Vec3, up Vec3, verticalFOV float64, aspectR
 		v:          v,
 		w:          w,
 		lensRadius: aperture / 2.0,
+		tStart:     tStart,
+		tStop:      tStop,
 	}
 }
 
@@ -50,5 +54,6 @@ func (c Camera) RayTo(s float64, t float64) Ray {
 	return Ray{
 		Origin:    c.origin.Add(offset),
 		Direction: c.corner.Add(hOffset).Add(vOffset).Sub(c.origin).Sub(offset),
+		Time:      rand.Float64()*(c.tStop-c.tStart) + c.tStart,
 	}
 }

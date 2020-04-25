@@ -27,4 +27,4 @@ corner := lookfrom - u*width*focusDist - v*height*focusDist - w*focusDist
 
 - No forward declarations
 
-`Actor` needs to know about `Shape`, `Material` and `Ray`, but `Shape` also has to know about `Ray`, so they can't live in different packages without having to add unecessary complexity, because Go doesn't support forward declarations and can't resolve "circular" dependecies.
+`Actor` needs to know about `Shape`, `Material` and `Ray`, but `Shape` also has to know about `Ray`, so they can't live in different packages without having to add unecessary complexity, because Go doesn't support forward declarations and can't resolve "circular" dependencies.
