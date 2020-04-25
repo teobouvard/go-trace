@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"image/color"
 	"math"
 	"math/rand"
 
@@ -154,8 +154,8 @@ func RandVecInterval(low float64, high float64) Vec3 {
 	return Vec3{x, y, z}
 }
 
-// WriteColor writes the color of v to f
-func (u Vec3) WriteColor(samples int) string {
+// GetColor retruns the RGBA color of v
+func (u Vec3) GetColor(samples int) color.RGBA {
 	colorRange := 256.0
 	minv := 0.0
 	maxv := 0.999
@@ -164,13 +164,13 @@ func (u Vec3) WriteColor(samples int) string {
 	g := math.Sqrt(scale * u.Y)
 	b := math.Sqrt(scale * u.Z)
 
-	ir := int(colorRange * util.Clamp(r, minv, maxv))
-	ig := int(colorRange * util.Clamp(g, minv, maxv))
-	ib := int(colorRange * util.Clamp(b, minv, maxv))
+	ir := uint8(colorRange * util.Clamp(r, minv, maxv))
+	ig := uint8(colorRange * util.Clamp(g, minv, maxv))
+	ib := uint8(colorRange * util.Clamp(b, minv, maxv))
 
 	if ir < 0 || ig < 0 || ib < 0 {
 		panic("negative color component")
 	}
 
-	return fmt.Sprintf("%v %v %v\n", ir, ig, ib)
+	return color.RGBA{ir, ig, ib, 255}
 }

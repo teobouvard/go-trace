@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"image"
+	"image/png"
 	"math"
 	"math/rand"
 	"os"
@@ -43,11 +45,10 @@ func rayColor(ray Ray, world Collection, depth int) Vec3 {
 
 // Render renders the scene
 func (s Scene) Render() {
-	// allocate memory for result
-	lines := make([][]string, s.height)
-	for i := range lines {
-		lines[i] = make([]string, s.width)
-	}
+	// create image
+	upLeft := image.Point{0, 0}
+	lowRight := image.Point{s.width, s.height}
+	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
 
 	// create workgroup
 	ctx := context.TODO()
@@ -59,14 +60,16 @@ func (s Scene) Render() {
 			defer sem.Release(1)
 			fmt.Fprintf(os.Stderr, "\rLines remaining: %v", s.height-j)
 			for i := 0; i < s.width; i++ {
-				color := WHITE
+				pixel := BLACK
 				for k := 0; k < s.pixelSamples; k++ {
 					u := (float64(i) + rand.Float64()) / float64(s.width)
 					v := (float64(j) + rand.Float64()) / float64(s.height)
 					ray := s.camera.RayTo(u, v)
-					color = color.Add(rayColor(ray, s.world, s.maxScatter))
+					pixel = pixel.Add(rayColor(ray, s.world, s.maxScatter))
 				}
-				lines[s.height-j-1][i] = fmt.Sprintf(color.WriteColor(s.pixelSamples))
+				// set image color
+				imgColor := pixel.GetColor(s.pixelSamples)
+				img.Set(i, s.height-j-1, imgColor)
 			}
 		}(j)
 	}
@@ -75,23 +78,20 @@ func (s Scene) Render() {
 	sem.Acquire(ctx, nWorkers)
 
 	// write image
-	fmt.Printf("P3\n%v %v\n255\n", s.width, s.height)
-	for _, line := range lines {
-		for _, col := range line {
-			fmt.Print(col)
-		}
-	}
+	os.Remove("img/image.png")
+	f, _ := os.Create("img/image.png")
+	png.Encode(f, img)
 }
-
-/* BOOK SCENE */
 
 // BookScene creates the scene on the cover of the first book
 func BookScene() Scene {
 	// image settings
 	imageWidth := 1440
 	imageHeight := 1080
+	//imageWidth := 200
+	//imageHeight := 100
 	pixelSamples := 100
-	maxScatter := 100
+	maxScatter := 50
 
 	// camera settings
 	aspectRatio := float64(imageWidth) / float64(imageHeight)
