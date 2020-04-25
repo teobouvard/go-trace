@@ -19,7 +19,7 @@ type Lambertian struct {
 
 // Scatter defines how a lambertian material scatters a Ray
 func (l Lambertian) Scatter(ray Ray, hit HitRecord) (bool, Vec3, Ray) {
-	scatterDirection := hit.Normal.Add(RandLambertian())
+	scatterDirection := hit.Normal.Add(RandSphere())
 	scattered := Ray{hit.Position, scatterDirection}
 	return true, l.albedo, scattered
 }
@@ -41,7 +41,7 @@ func NewMetal(albedo Vec3, fuzz float64) Metal {
 // Scatter defines the behaviour of rays when they hit Metal material
 func (m Metal) Scatter(ray Ray, record HitRecord) (bool, Vec3, Ray) {
 	reflectedDirection := ray.Direction.Unit().Reflect(record.Normal)
-	fuzziness := RandLambertian().Scale(m.fuzz)
+	fuzziness := RandSphere().Scale(m.fuzz)
 	scattered := Ray{record.Position, reflectedDirection.Add(fuzziness)}
 	attenuation := m.albedo
 	scatters := scattered.Direction.Dot(record.Normal) > 0

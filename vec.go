@@ -8,6 +8,11 @@ import (
 	"github.com/teobouvard/gotrace/util"
 )
 
+// Vec3 defines a 3-dimensional vector
+type Vec3 struct {
+	X, Y, Z float64
+}
+
 // Colors
 var (
 	BLACK = Vec3{0, 0, 0}
@@ -16,11 +21,6 @@ var (
 	GREEN = Vec3{0, 1, 0}
 	BLUE  = Vec3{0, 0, 1}
 )
-
-// Vec3 defines a 3-dimensional vector
-type Vec3 struct {
-	X, Y, Z float64
-}
 
 // Add returns u + v
 func (u Vec3) Add(v Vec3) Vec3 {
@@ -122,8 +122,8 @@ func (u Vec3) SquareNorm() float64 {
 	return u.Dot(u)
 }
 
-// RandLambertian returns vector drawn from a lambertian distribution inside the unit sphere
-func RandLambertian() Vec3 {
+// RandSphere returns vector drawn from a lambertian distribution inside the unit sphere
+func RandSphere() Vec3 {
 	a := 2.0 * rand.Float64() * math.Pi
 	z := 2.0 * (rand.Float64() - 0.5)
 	r := math.Sqrt(1 - z*z)
@@ -132,6 +132,26 @@ func RandLambertian() Vec3 {
 		r * math.Sin(a),
 		z,
 	}
+}
+
+// RandDisk returns a random vector in the unit disk
+func RandDisk() Vec3 {
+	theta := 2 * math.Pi * rand.Float64()
+	r := rand.Float64()
+	return Vec3{X: r * math.Cos(theta), Y: r * math.Sin(theta)}
+}
+
+// RandVec returns a random vector with coordinates in [0, 1)
+func RandVec() Vec3 {
+	return Vec3{rand.Float64(), rand.Float64(), rand.Float64()}
+}
+
+// RandVecInterval returns a random vector with coordinates in [low, high)
+func RandVecInterval(low float64, high float64) Vec3 {
+	x := rand.Float64()*(high-low) + low
+	y := rand.Float64()*(high-low) + low
+	z := rand.Float64()*(high-low) + low
+	return Vec3{x, y, z}
 }
 
 // WriteColor writes the color of v to f
