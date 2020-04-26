@@ -1,6 +1,10 @@
 package main
 
-import "math"
+import (
+	"math"
+
+	"github.com/teobouvard/gotrace/util"
+)
 
 /*
 Geometry interface
@@ -87,7 +91,7 @@ type MovingSphere struct {
 }
 
 func (s MovingSphere) centerAt(time float64) Vec3 {
-	elapsed := (time - s.tStart) / (s.tStop - s.tStart)
+	elapsed := util.Map(time, s.tStart, s.tStop, 0, 1)
 	moved := s.CenterStop.Sub(s.CenterStart).Scale(elapsed)
 	return s.CenterStart.Add(moved)
 }

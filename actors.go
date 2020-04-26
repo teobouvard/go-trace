@@ -11,6 +11,7 @@ type HitRecord struct {
 	Position Vec3
 	Normal   Vec3
 	Material Material
+	U, V     float64
 }
 
 // Actor is an object on the scene having a shape and a material
@@ -47,9 +48,8 @@ func (c Collection) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) 
 	closestHit := tMax
 	var closestRecord *HitRecord = nil
 
-	for _, actor := range c {
-		// using the closest hit so far as tmax,
-		if hit, record := actor.Hit(ray, tMin, closestHit); hit {
+	for i := 0; i < len(c); i++ {
+		if hit, record := c[i].Hit(ray, tMin, closestHit); hit {
 			closestRecord = record
 			closestHit = record.Distance
 			hitAnything = true

@@ -159,23 +159,17 @@ func (u Vec3) AsArray() [3]float64 {
 	return [3]float64{u.X, u.Y, u.Z}
 }
 
-// GetColor retruns the RGBA color of v
+// GetColor retruns the RGBA color of the vector
 func (u Vec3) GetColor(samples int) color.RGBA {
-	colorRange := 256.0
-	minv := 0.0
-	maxv := 0.999
+	maxColor := 255.0
 	scale := 1.0 / float64(samples)
-	r := math.Sqrt(scale * u.X)
+	r := math.Sqrt(scale * u.X) // sqrt for alpha correction
 	g := math.Sqrt(scale * u.Y)
 	b := math.Sqrt(scale * u.Z)
 
-	ir := uint8(colorRange * util.Clamp(r, minv, maxv))
-	ig := uint8(colorRange * util.Clamp(g, minv, maxv))
-	ib := uint8(colorRange * util.Clamp(b, minv, maxv))
-
-	if ir < 0 || ig < 0 || ib < 0 {
-		panic("negative color component")
-	}
+	ir := uint8(util.Map(r, 0, 1, 0, maxColor))
+	ig := uint8(util.Map(g, 0, 1, 0, maxColor))
+	ib := uint8(util.Map(b, 0, 1, 0, maxColor))
 
 	return color.RGBA{ir, ig, ib, 255}
 }

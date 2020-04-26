@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"image"
 	"image/png"
 	"math"
@@ -10,6 +9,7 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/cheggaaa/pb/v3"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -23,15 +23,15 @@ type Scene struct {
 	maxScatter   int
 }
 
-func rayColor(ray Ray, world Index, depth int) Vec3 {
+func (s Scene) rayColor(ray Ray, depth int) Vec3 {
 	if depth <= 0 {
 		// too many scattered bounces, assume absorption
 		return BLACK
 	}
 
-	if hit, record := world.Hit(ray, 0.001, math.MaxFloat64); hit {
+	if hit, record := s.world.Hit(ray, 0.001, math.MaxFloat64); hit {
 		if scatters, attenuation, scattered := record.Material.Scatter(ray, *record); scatters {
-			return attenuation.Mul(rayColor(scattered, world, depth-1))
+			return attenuation.Mul(s.rayColor(scattered, depth-1))
 		}
 		// material absorbs all the ray
 		return BLACK
@@ -54,23 +54,24 @@ func (s Scene) Render() {
 	ctx := context.TODO()
 	nWorkers := int64(runtime.NumCPU())
 	sem := semaphore.NewWeighted(nWorkers)
+	bar := pb.StartNew(s.height)
 	for j := 0; j < s.height; j++ {
 		sem.Acquire(ctx, 1)
 		go func(j int) {
 			defer sem.Release(1)
-			fmt.Fprintf(os.Stderr, "\rLines remaining: %v", s.height-j)
 			for i := 0; i < s.width; i++ {
 				pixel := BLACK
 				for k := 0; k < s.pixelSamples; k++ {
 					u := (float64(i) + rand.Float64()) / float64(s.width)
 					v := (float64(j) + rand.Float64()) / float64(s.height)
 					ray := s.camera.RayTo(u, v)
-					pixel = pixel.Add(rayColor(ray, s.world, s.maxScatter))
+					pixel = pixel.Add(s.rayColor(ray, s.maxScatter))
 				}
 				// set image color
 				imgColor := pixel.GetColor(s.pixelSamples)
 				img.Set(i, s.height-j-1, imgColor)
 			}
+			bar.Increment()
 		}(j)
 	}
 
@@ -86,9 +87,11 @@ func (s Scene) Render() {
 // BookScene creates the scene on the cover of the first book
 func BookScene() Scene {
 	// image settings
-	imageWidth := 1440
-	imageHeight := 1080
-	pixelSamples := 20
+	//imageWidth := 1440
+	//imageHeight := 1080
+	imageWidth := 200
+	imageHeight := 100
+	pixelSamples := 100
 	maxScatter := 50
 
 	// camera settings
@@ -109,7 +112,7 @@ func BookScene() Scene {
 				Radius: 1000,
 			},
 			material: Lambertian{
-				albedo: Vec3{0.5, 0.5, 0.5},
+				albedo: ConstantTexture{Vec3{0.5, 0.5, 0.5}},
 			},
 		},
 	}
@@ -129,7 +132,7 @@ func BookScene() Scene {
 							Radius: 0.2,
 						},
 						material: Lambertian{
-							albedo: albedo,
+							albedo: ConstantTexture{albedo},
 						},
 					}
 					objects.Add(actor)
@@ -181,7 +184,7 @@ func BookScene() Scene {
 				Radius: 1,
 			},
 			material: Lambertian{
-				albedo: Vec3{0.4, 0.2, 0.1},
+				albedo: ConstantTexture{Vec3{0.4, 0.2, 0.1}},
 			},
 		},
 		Actor{
@@ -197,7 +200,6 @@ func BookScene() Scene {
 	)
 
 	world := NewIndex(objects, 0, len(objects)-1, 0, 1)
-
 	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter}
 }
 
@@ -206,8 +208,8 @@ func MovingSpheres() Scene {
 	// image settings
 	//imageWidth := 1440
 	//imageHeight := 1080
-	imageWidth := 400
-	imageHeight := 200
+	imageWidth := 200
+	imageHeight := 100
 	pixelSamples := 100
 	maxScatter := 50
 
@@ -229,7 +231,10 @@ func MovingSpheres() Scene {
 				Radius: 1000,
 			},
 			material: Lambertian{
-				albedo: Vec3{0.5, 0.5, 0.5},
+				albedo: CheckerTexture{
+					odd:  ConstantTexture{Vec3{0, 0, 0}},
+					even: ConstantTexture{Vec3{1, 1, 1}},
+				},
 			},
 		},
 	}
@@ -252,7 +257,7 @@ func MovingSpheres() Scene {
 							Radius:      0.2,
 						},
 						material: Lambertian{
-							albedo: albedo,
+							albedo: ConstantTexture{albedo},
 						},
 					}
 					world.Add(actor)
@@ -304,7 +309,7 @@ func MovingSpheres() Scene {
 				Radius: 1,
 			},
 			material: Lambertian{
-				albedo: Vec3{0.4, 0.2, 0.1},
+				albedo: ConstantTexture{Vec3{0.4, 0.2, 0.1}},
 			},
 		},
 		Actor{

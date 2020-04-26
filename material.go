@@ -7,21 +7,37 @@ import (
 	"github.com/teobouvard/gotrace/util"
 )
 
-// Material define the way actors interact with a ray
+/*
+Material define the way actors interact with a ray
+
+Scatter
+
+@in
+
+	ray : an incident ray
+	hit : the record for the hit of the ray with a geometry
+
+@out
+
+	bool : true if the material scatters the ray
+	Vec3 : the attenuation of the scattered ray
+	Ray : the scattered ray
+*/
 type Material interface {
 	Scatter(ray Ray, hit HitRecord) (bool, Vec3, Ray)
 }
 
 // Lambertian is a diffuse material
 type Lambertian struct {
-	albedo Vec3
+	albedo Texture
 }
 
 // Scatter defines how a lambertian material scatters a Ray
 func (l Lambertian) Scatter(ray Ray, hit HitRecord) (bool, Vec3, Ray) {
 	scatterDirection := hit.Normal.Add(RandSphere())
 	scattered := Ray{hit.Position, scatterDirection, ray.Time}
-	return true, l.albedo, scattered
+	attenuation := l.albedo.Value(hit.U, hit.V, hit.Position)
+	return true, attenuation, scattered
 }
 
 // Metal is a reflective material
