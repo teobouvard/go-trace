@@ -83,19 +83,18 @@ func (c Collection) Bound(tMin float64, tMax float64) (bool, *Bbox) {
 	return true, &collectionBox
 }
 
-// LessX returns the comparison of objects in the collection along X axis. Used for Index sorting.
-func (c Collection) LessX(i, j int) bool {
-	return true
-}
+// Comparator returns a comparison function of objects in the collection along the given axis. Used for Index sorting.
+func (c Collection) Comparator(startTime, endTime float64, axis int) func(i, j int) bool {
+	return func(i, j int) bool {
+		leftBound, leftBox := c[i].Bound(startTime, endTime)
+		rightBound, rightBox := c[j].Bound(startTime, endTime)
 
-// LessY returns the comparison of objects in the collection along X axis. Used for Index sorting.
-func (c Collection) LessY(i, j int) bool {
-	return true
-}
+		if !leftBound || !rightBound {
+			panic("no bounding box")
+		}
 
-// LessZ returns the comparison of objects in the collection along X axis. Used for Index sorting.
-func (c Collection) LessZ(i, j int) bool {
-	return true
+		return leftBox.Min.AsArray()[axis] < rightBox.Min.AsArray()[axis]
+	}
 }
 
 // Index is a binary tree forming a bounding volume hierarchy of objects satisfying the geometry interface
@@ -107,18 +106,11 @@ type Index struct {
 
 // NewIndex builds a bounding volume hierarchy
 func NewIndex(world Collection, start, end int, startTime, endTime float64) Index {
-	// chose random axis
-	var comparator func(i, j int) bool
-	switch rand.Intn(3) {
-	case 0:
-		comparator = world.LessX
-	case 1:
-		comparator = world.LessY
-	case 2:
-		comparator = world.LessZ
-	}
-	span := end - start
+	// chose random axis for sorting
+	comparator := world.Comparator(startTime, endTime, rand.Intn(3))
+
 	var idx Index
+	span := end - start
 	if span == 1 {
 		idx.left = world[start]
 		idx.right = world[start]
@@ -131,7 +123,7 @@ func NewIndex(world Collection, start, end int, startTime, endTime float64) Inde
 			idx.right = world[start]
 		}
 	} else {
-		sort.Slice(world[start:end], comparator) //TODO does this sort the view or the slice ?
+		sort.Slice(world, comparator) //TODO does this sort the view or the slice ?
 		mid := start + span/2
 		idx.left = NewIndex(world, start, mid, startTime, endTime)
 		idx.right = NewIndex(world, mid, end, startTime, endTime)

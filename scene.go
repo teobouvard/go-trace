@@ -196,7 +196,7 @@ func BookScene() Scene {
 		},
 	)
 
-	world := NewIndex(objects, 0, len(objects), 0, 1)
+	world := NewIndex(objects, 0, len(objects)-1, 0, 1)
 
 	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter}
 }
@@ -318,6 +318,6 @@ func MovingSpheres() Scene {
 			},
 		},
 	)
-	index := NewIndex(world, 0, len(world), 0, 1)
+	index := NewIndex(world, 0, len(world)-1, 0, 1)
 	return Scene{index, camera, pixelSamples, imageWidth, imageHeight, maxScatter}
 }
