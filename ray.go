@@ -1,4 +1,4 @@
-package main
+package gotrace
 
 // Ray is a light ray
 type Ray struct {

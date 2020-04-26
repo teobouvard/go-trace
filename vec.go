@@ -1,4 +1,4 @@
-package main
+package gotrace
 
 import (
 	"image/color"

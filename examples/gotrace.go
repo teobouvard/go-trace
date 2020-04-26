@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"runtime/pprof"
+
+	"github.com/teobouvard/gotrace"
 )
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
@@ -21,6 +23,6 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	scene := MovingSpheres()
+	scene := gotrace.MovingSpheres()
 	scene.Render()
 }
