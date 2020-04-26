@@ -154,6 +154,11 @@ func RandVecInterval(low float64, high float64) Vec3 {
 	return Vec3{x, y, z}
 }
 
+// AsArray returns the coordinates of the vector as an array of size 3
+func (u Vec3) AsArray() [3]float64 {
+	return [3]float64{u.X, u.Y, u.Z}
+}
+
 // GetColor retruns the RGBA color of v
 func (u Vec3) GetColor(samples int) color.RGBA {
 	colorRange := 256.0

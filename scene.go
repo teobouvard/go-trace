@@ -15,7 +15,7 @@ import (
 
 // Scene is the whole scene to be rendered
 type Scene struct {
-	world        Collection
+	world        Index
 	camera       Camera
 	pixelSamples int
 	width        int
@@ -23,7 +23,7 @@ type Scene struct {
 	maxScatter   int
 }
 
-func rayColor(ray Ray, world Collection, depth int) Vec3 {
+func rayColor(ray Ray, world Index, depth int) Vec3 {
 	if depth <= 0 {
 		// too many scattered bounces, assume absorption
 		return BLACK
@@ -33,7 +33,7 @@ func rayColor(ray Ray, world Collection, depth int) Vec3 {
 		if scatters, attenuation, scattered := record.Material.Scatter(ray, *record); scatters {
 			return attenuation.Mul(rayColor(scattered, world, depth-1))
 		}
-		// texture absorbs all the ray
+		// material absorbs all the ray
 		return BLACK
 	}
 
@@ -102,16 +102,14 @@ func BookScene() Scene {
 	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, 0, 1)
 
 	// objects on the scene
-	world := Collection{
-		[]Actor{
-			{
-				shape: Sphere{
-					Center: Vec3{X: 0, Y: -1000, Z: 0},
-					Radius: 1000,
-				},
-				texture: Lambertian{
-					albedo: Vec3{0.5, 0.5, 0.5},
-				},
+	objects := Collection{
+		{
+			shape: Sphere{
+				Center: Vec3{X: 0, Y: -1000, Z: 0},
+				Radius: 1000,
+			},
+			material: Lambertian{
+				albedo: Vec3{0.5, 0.5, 0.5},
 			},
 		},
 	}
@@ -130,11 +128,11 @@ func BookScene() Scene {
 							Center: center,
 							Radius: 0.2,
 						},
-						texture: Lambertian{
+						material: Lambertian{
 							albedo: albedo,
 						},
 					}
-					world.Add(actor)
+					objects.Add(actor)
 				} else if randMaterial < 0.95 {
 					//metal
 					albedo := RandVecInterval(0.5, 1.0)
@@ -144,12 +142,12 @@ func BookScene() Scene {
 							Center: center,
 							Radius: 0.2,
 						},
-						texture: Metal{
+						material: Metal{
 							albedo: albedo,
 							fuzz:   fuzz,
 						},
 					}
-					world.Add(actor)
+					objects.Add(actor)
 				} else {
 					// glass
 					actor := Actor{
@@ -157,23 +155,23 @@ func BookScene() Scene {
 							Center: center,
 							Radius: 0.2,
 						},
-						texture: Dielectric{
+						material: Dielectric{
 							n: 1.5,
 						},
 					}
-					world.Add(actor)
+					objects.Add(actor)
 				}
 			}
 		}
 	}
 
-	world.Add(
+	objects.Add(
 		Actor{
 			shape: Sphere{
 				Center: Vec3{Y: 1},
 				Radius: 1,
 			},
-			texture: Dielectric{
+			material: Dielectric{
 				n: 1.5,
 			},
 		},
@@ -182,7 +180,7 @@ func BookScene() Scene {
 				Center: Vec3{X: -4, Y: 1},
 				Radius: 1,
 			},
-			texture: Lambertian{
+			material: Lambertian{
 				albedo: Vec3{0.4, 0.2, 0.1},
 			},
 		},
@@ -191,12 +189,14 @@ func BookScene() Scene {
 				Center: Vec3{X: 4, Y: 1},
 				Radius: 1,
 			},
-			texture: Metal{
+			material: Metal{
 				albedo: Vec3{0.7, 0.6, 0.5},
 				fuzz:   0,
 			},
 		},
 	)
+
+	world := NewIndex(objects, 0, len(objects), 0, 1)
 
 	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter}
 }
@@ -223,15 +223,13 @@ func MovingSpheres() Scene {
 
 	// objects on the scene
 	world := Collection{
-		[]Actor{
-			{
-				shape: Sphere{
-					Center: Vec3{X: 0, Y: -1000, Z: 0},
-					Radius: 1000,
-				},
-				texture: Lambertian{
-					albedo: Vec3{0.5, 0.5, 0.5},
-				},
+		{
+			shape: Sphere{
+				Center: Vec3{X: 0, Y: -1000, Z: 0},
+				Radius: 1000,
+			},
+			material: Lambertian{
+				albedo: Vec3{0.5, 0.5, 0.5},
 			},
 		},
 	}
@@ -253,7 +251,7 @@ func MovingSpheres() Scene {
 							tStop:       1,
 							Radius:      0.2,
 						},
-						texture: Lambertian{
+						material: Lambertian{
 							albedo: albedo,
 						},
 					}
@@ -267,7 +265,7 @@ func MovingSpheres() Scene {
 							Center: center,
 							Radius: 0.2,
 						},
-						texture: Metal{
+						material: Metal{
 							albedo: albedo,
 							fuzz:   fuzz,
 						},
@@ -280,7 +278,7 @@ func MovingSpheres() Scene {
 							Center: center,
 							Radius: 0.2,
 						},
-						texture: Dielectric{
+						material: Dielectric{
 							n: 1.5,
 						},
 					}
@@ -296,7 +294,7 @@ func MovingSpheres() Scene {
 				Center: Vec3{Y: 1},
 				Radius: 1,
 			},
-			texture: Dielectric{
+			material: Dielectric{
 				n: 1.5,
 			},
 		},
@@ -305,7 +303,7 @@ func MovingSpheres() Scene {
 				Center: Vec3{X: -4, Y: 1},
 				Radius: 1,
 			},
-			texture: Lambertian{
+			material: Lambertian{
 				albedo: Vec3{0.4, 0.2, 0.1},
 			},
 		},
@@ -314,12 +312,12 @@ func MovingSpheres() Scene {
 				Center: Vec3{X: 4, Y: 1},
 				Radius: 1,
 			},
-			texture: Metal{
+			material: Metal{
 				albedo: Vec3{0.7, 0.6, 0.5},
 				fuzz:   0,
 			},
 		},
 	)
-
-	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter}
+	index := NewIndex(world, 0, len(world), 0, 1)
+	return Scene{index, camera, pixelSamples, imageWidth, imageHeight, maxScatter}
 }

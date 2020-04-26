@@ -4,18 +4,29 @@ import "math"
 
 /*
 Geometry interface
+
+Hit
+
 @in
 	ray : a light ray
 	tMin : closer objects are not considered
 	tMax : further objects are not considered
 @out
 	bool : if the ray hit the geometry
-	float64 : t at hit
-	Vec3 : position of hit
-	Vec3 : normal of geometry at hit
+	HitRecord : information about the hit, or nil
+
+Bound
+
+@in
+	startTime : the starting time for bounding
+	endTime : the ending time for bounding
+@out
+	bool : if the geometry can be bounded (false for infinite planes)
+	Bbox : bounding box (aabb) of the geometry, if applicable
 */
 type Geometry interface {
-	Hit(ray Ray, tMin float64, tMax float64) (bool, float64, Vec3, Vec3)
+	Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord)
+	Bound(startTime float64, endTime float64) (bool, *Bbox)
 }
 
 // Sphere geometry
@@ -25,7 +36,7 @@ type Sphere struct {
 }
 
 // Hit implements the geomtry interface for checking the intersection of a Ray and a Sphere
-func (s Sphere) Hit(ray Ray, tMin float64, tMax float64) (bool, float64, Vec3, Vec3) {
+func (s Sphere) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
 	oc := ray.Origin.Sub(s.Center)
 	a := ray.Direction.SquareNorm()
 	b := oc.Dot(ray.Direction)
@@ -34,7 +45,7 @@ func (s Sphere) Hit(ray Ray, tMin float64, tMax float64) (bool, float64, Vec3, V
 
 	if discriminant > 0 {
 		root := math.Sqrt(discriminant)
-		// first solution, closest to camera
+		// first quadratic solution, closest to camera
 		t := (-b - root) / a
 		if t < tMax && t > tMin {
 			pos := ray.At(t)
@@ -42,19 +53,29 @@ func (s Sphere) Hit(ray Ray, tMin float64, tMax float64) (bool, float64, Vec3, V
 				Previously, I thought doing pos.Sub(s.Center).Unit() was smarter than to divide by the radius.
 				This led to a very nasty bug when using negative radii as the normal was computed on the wrong side of the geometry.
 			*/
-			normal := pos.Sub(s.Center).Div(s.Radius)
-			return true, t, pos, normal
+			n := pos.Sub(s.Center).Div(s.Radius)
+			return true, &HitRecord{Distance: t, Position: pos, Normal: n}
 		}
 		// second solution, farthest from camera
 		t = (-b + root) / a
 		if t < tMax && t > tMin {
 			pos := ray.At(t)
-			normal := pos.Sub(s.Center).Div(s.Radius)
-			return true, t, pos, normal
+			n := pos.Sub(s.Center).Div(s.Radius)
+			return true, &HitRecord{Distance: t, Position: pos, Normal: n}
 		}
 	}
 
-	return false, -1, Vec3{}, Vec3{}
+	return false, nil
+}
+
+// Bound returns the bounding box of the Sphere
+func (s Sphere) Bound(startTime float64, endTime float64) (bool, *Bbox) {
+	bounds := Vec3{s.Radius, s.Radius, s.Radius}
+	box := Bbox{
+		Min: s.Center.Sub(bounds),
+		Max: s.Center.Add(bounds),
+	}
+	return true, &box
 }
 
 // MovingSphere geometry
@@ -72,7 +93,7 @@ func (s MovingSphere) centerAt(time float64) Vec3 {
 }
 
 // Hit implements the geomtry interface for checking the intersection of a Ray and a MovingSphere
-func (s MovingSphere) Hit(ray Ray, tMin float64, tMax float64) (bool, float64, Vec3, Vec3) {
+func (s MovingSphere) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
 	center := s.centerAt(ray.Time)
 	oc := ray.Origin.Sub(center)
 	a := ray.Direction.SquareNorm()
@@ -86,21 +107,32 @@ func (s MovingSphere) Hit(ray Ray, tMin float64, tMax float64) (bool, float64, V
 		t := (-b - root) / a
 		if t < tMax && t > tMin {
 			pos := ray.At(t)
-			/*
-				Previously, I thought doing pos.Sub(s.Center).Unit() was smarter than to divide by the radius.
-				This led to a very nasty bug when using negative radii as the normal was computed on the wrong side of the geometry.
-			*/
-			normal := pos.Sub(center).Div(s.Radius)
-			return true, t, pos, normal
+			n := pos.Sub(center).Div(s.Radius)
+			return true, &HitRecord{Distance: t, Position: pos, Normal: n}
 		}
 		// second solution, farthest from camera
 		t = (-b + root) / a
 		if t < tMax && t > tMin {
 			pos := ray.At(t)
-			normal := pos.Sub(center).Div(s.Radius)
-			return true, t, pos, normal
+			n := pos.Sub(center).Div(s.Radius)
+			return true, &HitRecord{Distance: t, Position: pos, Normal: n}
 		}
 	}
 
-	return false, -1, Vec3{}, Vec3{}
+	return false, nil
+}
+
+// Bound returns the bounding box of the MovingSphere
+func (s MovingSphere) Bound(startTime float64, endTime float64) (bool, *Bbox) {
+	bounds := Vec3{s.Radius, s.Radius, s.Radius}
+	startBox := Bbox{
+		Min: s.centerAt(startTime).Sub(bounds),
+		Max: s.centerAt(startTime).Add(bounds),
+	}
+	stopBox := Bbox{
+		Min: s.centerAt(endTime).Sub(bounds),
+		Max: s.centerAt(endTime).Add(bounds),
+	}
+	box := startBox.Merge(stopBox)
+	return true, &box
 }
