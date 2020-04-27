@@ -1,6 +1,10 @@
 package gotrace
 
-import "math"
+import (
+	"math"
+
+	"github.com/ojrac/opensimplex-go"
+)
 
 /*
 Texture interface
@@ -43,4 +47,14 @@ func (t CheckerTexture) Value(u, v float64, pos Vec3) Vec3 {
 		return t.odd.Value(u, v, pos)
 	}
 	return t.even.Value(u, v, pos)
+}
+
+// Noise is an opensimplex noise
+type Noise struct {
+	noise opensimplex.Noise
+}
+
+// Value implements the texture interface for a Noise Texture
+func (t Noise) Value(u,v float64, pos Vec3) Vec3 {
+	return WHITE.Scale(t.noise.Eval3(pos.X, pos.Y, pos.Z))
 }

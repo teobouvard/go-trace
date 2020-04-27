@@ -10,6 +10,7 @@ import (
 	"runtime"
 
 	"github.com/cheggaaa/pb/v3"
+	"github.com/ojrac/opensimplex-go"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -325,4 +326,35 @@ func MovingSpheres() Scene {
 	)
 	index := NewIndex(world, 0, len(world)-1, 0, 1)
 	return Scene{index, camera, pixelSamples, imageWidth, imageHeight, maxScatter}
+}
+
+// NoisyScene is a scene with Opensimplex noise
+func NoisyScene() Scene {
+	imageWidth := 200
+	imageHeight := 100
+	pixelSamples := 100
+	maxScatter := 50
+
+	// camera settings
+	aspectRatio := float64(imageWidth) / float64(imageHeight)
+	fov := 20.0
+	lookFrom := Vec3{13, 2, 3}
+	lookAt := Vec3{0, 0, 0}
+	up := Vec3{Y: 1}
+	focusDist := 10.0
+	aperture := 0.0
+	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, 0, 1)
+
+	noise := Noise{opensimplex.New(42)}
+	objects := Collection{
+		Actor{
+			shape: Sphere{
+				Center: Vec3{Y:-1000},
+				Radius: 1000,
+			},
+			material: Lambertian{noise},
+		},
+	}
+	world := NewIndex(objects, 0, len(objects)-1, 0, 1)
+	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter}
 }

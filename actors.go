@@ -110,7 +110,7 @@ func NewIndex(world Collection, start, end int, startTime, endTime float64) Inde
 	comparator := world.Comparator(startTime, endTime, rand.Intn(3))
 
 	var idx Index
-	span := end - start
+	span := end - start + 1
 	if span == 1 {
 		idx.left = world[start]
 		idx.right = world[start]
