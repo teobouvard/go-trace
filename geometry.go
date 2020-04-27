@@ -39,6 +39,15 @@ type Sphere struct {
 	Radius float64
 }
 
+// computes the location of the hit as "pixel" coordinates
+func (s Sphere) pixelHit(pos Vec3) (u, v float64) {
+	phi := math.Atan2(pos.Z, pos.X)
+	theta := math.Asin(pos.Y)
+	u = 1 - (phi+math.Pi)/(2*math.Pi)
+	v = (theta + math.Pi/2) / math.Pi
+	return
+}
+
 // Hit implements the geomtry interface for checking the intersection of a Ray and a Sphere
 func (s Sphere) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
 	oc := ray.Origin.Sub(s.Center)
@@ -58,14 +67,16 @@ func (s Sphere) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
 				This led to a very nasty bug when using negative radii as the normal was computed on the wrong side of the geometry.
 			*/
 			n := pos.Sub(s.Center).Div(s.Radius)
-			return true, &HitRecord{Distance: t, Position: pos, Normal: n}
+			u, v := s.pixelHit(n)
+			return true, &HitRecord{Distance: t, Position: pos, Normal: n, U: u, V: v}
 		}
 		// second solution, farthest from camera
 		t = (-b + root) / a
 		if t < tMax && t > tMin {
 			pos := ray.At(t)
 			n := pos.Sub(s.Center).Div(s.Radius)
-			return true, &HitRecord{Distance: t, Position: pos, Normal: n}
+			u, v := s.pixelHit(n)
+			return true, &HitRecord{Distance: t, Position: pos, Normal: n, U: u, V: v}
 		}
 	}
 

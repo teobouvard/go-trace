@@ -2,12 +2,14 @@ package gotrace
 
 import (
 	"context"
+	"fmt"
 	"image"
+	"image/draw"
+	_ "image/jpeg"
 	"image/png"
 	"math"
 	"math/rand"
 	"os"
-	"runtime"
 
 	"github.com/cheggaaa/pb/v3"
 	"github.com/ojrac/opensimplex-go"
@@ -41,7 +43,7 @@ func (s Scene) rayColor(ray Ray, depth int) Vec3 {
 	// background white-blue lerp
 	unitDirection := ray.Direction.Unit()
 	t := 0.5 * (unitDirection.Y + 1.0)
-	return WHITE.Scale(1.0 - t).Add(Vec3{0.5, 0.7, 1.0}.Scale(t))
+	return WHITE.Scale(1.0 - t).Add(Vec3{0.4, 0.5, 0.75}.Scale(t))
 }
 
 // Render renders the scene
@@ -53,7 +55,7 @@ func (s Scene) Render() {
 
 	// create workgroup
 	ctx := context.TODO()
-	nWorkers := int64(runtime.NumCPU())
+	nWorkers := int64(1)
 	sem := semaphore.NewWeighted(nWorkers)
 	bar := pb.StartNew(s.height)
 	for j := 0; j < s.height; j++ {
@@ -329,8 +331,8 @@ func MovingSpheres() Scene {
 	return Scene{index, camera, pixelSamples, imageWidth, imageHeight, maxScatter}
 }
 
-// NoisyScene is a scene with Opensimplex noise
-func NoisyScene() Scene {
+// MarbleScene is a scene with a black and white marble
+func MarbleScene() Scene {
 	imageWidth := 200
 	imageHeight := 100
 	pixelSamples := 100
@@ -349,27 +351,6 @@ func NoisyScene() Scene {
 	objects := Collection{
 		Actor{
 			shape: Sphere{
-				Center: Vec3{Y: -1000},
-				Radius: 1000,
-			},
-			material: Lambertian{
-				albedo: ConstantTexture{WHITE},
-			},
-		},
-		Actor{
-			shape: Sphere{
-				Center: Vec3{X: 3, Y: 2, Z: -2},
-				Radius: 2,
-			},
-			material: Lambertian{
-				Noise{
-					noise:     opensimplex.New(42),
-					frequency: 4,
-				},
-			},
-		},
-		Actor{
-			shape: Sphere{
 				Center: Vec3{X: 5, Y: 2, Z: 3},
 				Radius: 2,
 			},
@@ -379,6 +360,57 @@ func NoisyScene() Scene {
 					depth:      7,
 					turbulence: 5,
 					scale:      4,
+				},
+			},
+		},
+	}
+	// TODO index building should be transparent
+	world := NewIndex(objects, 0, len(objects)-1, 0, 1)
+	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter}
+}
+
+// EarthScene is a scene demonstrating image textures
+func EarthScene() Scene {
+	imageWidth := 800
+	imageHeight := 600
+	pixelSamples := 100
+	maxScatter := 50
+
+	// camera settings
+	aspectRatio := float64(imageWidth) / float64(imageHeight)
+	fov := 33.0
+	lookFrom := Vec3{13, 2, 3}
+	lookAt := Vec3{0, 2, 0}
+	up := Vec3{Y: 1}
+	focusDist := 10.0
+	aperture := 0.0
+	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, 0, 1)
+
+	fp, filerr := os.Open("./assets/blue_marble_september.jpg")
+	src, str, err := image.Decode(fp)
+	fmt.Print(str, filerr, err)
+	b := src.Bounds()
+	image := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
+	draw.Draw(image, image.Bounds(), src, b.Min, draw.Src)
+
+	objects := Collection{
+		Actor{
+			shape: Sphere{
+				Center: Vec3{Y: -1000},
+				Radius: 1000,
+			},
+			material: Lambertian{
+				albedo: ConstantTexture{Vec3{0.4, 0.4, 0.4}},
+			},
+		},
+		Actor{
+			shape: Sphere{
+				Center: Vec3{X: 5, Y: 2, Z: 3},
+				Radius: 2,
+			},
+			material: Lambertian{
+				Image{
+					data: image,
 				},
 			},
 		},

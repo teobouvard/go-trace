@@ -72,7 +72,6 @@ type Dielectric struct {
 func shlick(cosine float64, nRatio float64) float64 {
 	r0 := math.Pow((1-nRatio)/(1+nRatio), 2)
 	return r0 + (1-r0)*math.Pow(1-cosine, 5)
-
 }
 
 // Scatter defines the behaviour of rays when they hit Metal material

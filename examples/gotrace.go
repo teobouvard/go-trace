@@ -23,6 +23,6 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	scene := gotrace.NoisyScene()
+	scene := gotrace.EarthScene()
 	scene.Render()
 }
