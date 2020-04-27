@@ -1,0 +1,27 @@
+image:
+  width: 200
+  height: 100
+
+camera:
+  look_from:
+	x: 0
+	y: 0
+	z: 0
+  look_at:
+	x: 0
+	y: 0
+	z: 0
+  up:
+	y: 1
+  fov: 50
+  focus_distance: 10
+  aperture: 0
+  start: 0
+  end: 0
+
+objects:
+	- sphere:
+		center:
+			x: 1
+		radius: 1
+		

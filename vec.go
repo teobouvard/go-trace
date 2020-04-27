@@ -161,12 +161,15 @@ func (u Vec3) AsArray() [3]float64 {
 
 // GetColor retruns the RGBA color of the vector
 func (u Vec3) GetColor(samples int) color.RGBA {
-	maxColor := 255.0
+
+	// normalization + alpha correction
 	scale := 1.0 / float64(samples)
-	r := math.Sqrt(scale * u.X) // sqrt for alpha correction
+	r := math.Sqrt(scale * u.X)
 	g := math.Sqrt(scale * u.Y)
 	b := math.Sqrt(scale * u.Z)
 
+	// cast to pixel color value
+	maxColor := 255.0
 	ir := uint8(util.Map(r, 0, 1, 0, maxColor))
 	ig := uint8(util.Map(g, 0, 1, 0, maxColor))
 	ib := uint8(util.Map(b, 0, 1, 0, maxColor))

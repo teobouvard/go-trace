@@ -37,12 +37,12 @@ func (t ConstantTexture) Value(u, v float64, pos Vec3) Vec3 {
 type CheckerTexture struct {
 	odd  Texture
 	even Texture
+	freq float64
 }
 
 // Value implements the texture interface for a CheckerTexture
 func (t CheckerTexture) Value(u, v float64, pos Vec3) Vec3 {
-	freq := 10.0
-	sines := math.Sin(freq*pos.X) * math.Sin(freq*pos.Y) * math.Sin(freq*pos.Z)
+	sines := math.Sin(t.freq*pos.X) * math.Sin(t.freq*pos.Y) * math.Sin(t.freq*pos.Z)
 	if sines < 0.0 {
 		return t.odd.Value(u, v, pos)
 	}
@@ -51,10 +51,40 @@ func (t CheckerTexture) Value(u, v float64, pos Vec3) Vec3 {
 
 // Noise is an opensimplex noise
 type Noise struct {
-	noise opensimplex.Noise
+	noise     opensimplex.Noise
+	frequency float64
 }
 
 // Value implements the texture interface for a Noise Texture
-func (t Noise) Value(u,v float64, pos Vec3) Vec3 {
-	return WHITE.Scale(t.noise.Eval3(pos.X, pos.Y, pos.Z))
+func (t Noise) Value(u, v float64, pos Vec3) Vec3 {
+	scaled := pos.Scale(t.frequency)
+	sample := t.noise.Eval3(scaled.X, scaled.Y, scaled.Z)
+	return WHITE.Scale(0.5 * (1.0 + sample))
+}
+
+// Marble is a marble-like texture
+type Marble struct {
+	noise      opensimplex.Noise
+	depth      int
+	turbulence float64
+	scale      float64
+}
+
+func (t Marble) genTurbulence(pos Vec3) float64 {
+	sum := 0.0
+	freq := pos
+	weight := 1.0
+
+	for i := 0; i < t.depth; i++ {
+		sum += weight * t.noise.Eval3(freq.X, freq.Y, freq.Z)
+		weight *= 0.5
+		freq = freq.Scale(2)
+	}
+	return math.Abs(sum)
+}
+
+// Value implements the texture interface for a Noise Texture
+func (t Marble) Value(u, v float64, pos Vec3) Vec3 {
+	turbulence := t.genTurbulence(pos)
+	return WHITE.Scale(0.5 * (1.0 + math.Sin(t.scale*pos.Y+t.turbulence*turbulence)))
 }

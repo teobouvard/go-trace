@@ -235,6 +235,7 @@ func MovingSpheres() Scene {
 				albedo: CheckerTexture{
 					odd:  ConstantTexture{Vec3{0, 0, 0}},
 					even: ConstantTexture{Vec3{1, 1, 1}},
+					freq: 10,
 				},
 			},
 		},
@@ -337,24 +338,52 @@ func NoisyScene() Scene {
 
 	// camera settings
 	aspectRatio := float64(imageWidth) / float64(imageHeight)
-	fov := 20.0
+	fov := 33.0
 	lookFrom := Vec3{13, 2, 3}
-	lookAt := Vec3{0, 0, 0}
+	lookAt := Vec3{0, 2, 0}
 	up := Vec3{Y: 1}
 	focusDist := 10.0
 	aperture := 0.0
 	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, 0, 1)
 
-	noise := Noise{opensimplex.New(42)}
 	objects := Collection{
 		Actor{
 			shape: Sphere{
-				Center: Vec3{Y:-1000},
+				Center: Vec3{Y: -1000},
 				Radius: 1000,
 			},
-			material: Lambertian{noise},
+			material: Lambertian{
+				albedo: ConstantTexture{WHITE},
+			},
+		},
+		Actor{
+			shape: Sphere{
+				Center: Vec3{X: 3, Y: 2, Z: -2},
+				Radius: 2,
+			},
+			material: Lambertian{
+				Noise{
+					noise:     opensimplex.New(42),
+					frequency: 4,
+				},
+			},
+		},
+		Actor{
+			shape: Sphere{
+				Center: Vec3{X: 5, Y: 2, Z: 3},
+				Radius: 2,
+			},
+			material: Lambertian{
+				Marble{
+					noise:      opensimplex.New(51),
+					depth:      7,
+					turbulence: 5,
+					scale:      4,
+				},
+			},
 		},
 	}
+	// TODO index building should be transparent
 	world := NewIndex(objects, 0, len(objects)-1, 0, 1)
 	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter}
 }
