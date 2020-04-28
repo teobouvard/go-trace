@@ -72,6 +72,7 @@ type Marble struct {
 	scale      float64
 }
 
+// genTurbulence creates a turbulence effect by summing noise at different frequencies
 func (t Marble) genTurbulence(pos Vec3) float64 {
 	sum := 0.0
 	freq := pos

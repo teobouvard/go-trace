@@ -24,6 +24,7 @@ type Scene struct {
 	width        int
 	height       int
 	maxScatter   int
+	background   Vec3
 }
 
 func (s Scene) rayColor(ray Ray, depth int) Vec3 {
@@ -33,17 +34,20 @@ func (s Scene) rayColor(ray Ray, depth int) Vec3 {
 	}
 
 	if hit, record := s.world.Hit(ray, 0.001, math.MaxFloat64); hit {
+		emitted := record.Material.Emit(record.U, record.V, record.Position)
 		if scatters, attenuation, scattered := record.Material.Scatter(ray, *record); scatters {
-			return attenuation.Mul(s.rayColor(scattered, depth-1))
+			return emitted.Add(attenuation.Mul(s.rayColor(scattered, depth-1)))
 		}
-		// material absorbs all the ray
-		return BLACK
+		return emitted
 	}
+	return s.background
 
-	// background white-blue lerp
-	unitDirection := ray.Direction.Unit()
-	t := 0.5 * (unitDirection.Y + 1.0)
-	return WHITE.Scale(1.0 - t).Add(Vec3{0.4, 0.5, 0.75}.Scale(t))
+	/*
+		// background white-blue lerp
+		unitDirection := ray.Direction.Unit()
+		t := 0.5 * (unitDirection.Y + 1.0)
+		return WHITE.Scale(1.0 - t).Add(Vec3{0.4, 0.5, 0.75}.Scale(t))
+	*/
 }
 
 // Render renders the scene
@@ -80,6 +84,7 @@ func (s Scene) Render() {
 
 	// wait for all workers to exit
 	sem.Acquire(ctx, nWorkers)
+	bar.Finish()
 
 	// write image
 	os.Remove("img/image.png")
@@ -203,7 +208,8 @@ func BookScene() Scene {
 	)
 
 	world := NewIndex(objects, 0, len(objects)-1, 0, 1)
-	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter}
+	background := WHITE
+	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter, background}
 }
 
 // MovingSpheres creates the scene on the cover of the first book, with bouncing balls
@@ -328,7 +334,8 @@ func MovingSpheres() Scene {
 		},
 	)
 	index := NewIndex(world, 0, len(world)-1, 0, 1)
-	return Scene{index, camera, pixelSamples, imageWidth, imageHeight, maxScatter}
+	background := Vec3{0.8, 0.8, 0.8}
+	return Scene{index, camera, pixelSamples, imageWidth, imageHeight, maxScatter, background}
 }
 
 // MarbleScene is a scene with a black and white marble
@@ -366,13 +373,14 @@ func MarbleScene() Scene {
 	}
 	// TODO index building should be transparent
 	world := NewIndex(objects, 0, len(objects)-1, 0, 1)
-	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter}
+	background := WHITE
+	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter, background}
 }
 
 // EarthScene is a scene demonstrating image textures
 func EarthScene() Scene {
-	imageWidth := 800
-	imageHeight := 600
+	imageWidth := 200
+	imageHeight := 100
 	pixelSamples := 100
 	maxScatter := 50
 
@@ -417,5 +425,63 @@ func EarthScene() Scene {
 	}
 	// TODO index building should be transparent
 	world := NewIndex(objects, 0, len(objects)-1, 0, 1)
-	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter}
+	background := WHITE
+	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter, background}
+}
+
+// LightMarbleScene is a scene with a black and white marble with lights
+func LightMarbleScene() Scene {
+	imageWidth := 200
+	imageHeight := 100
+	pixelSamples := 200
+	maxScatter := 100
+
+	// camera settings
+	aspectRatio := float64(imageWidth) / float64(imageHeight)
+	fov := 50.0
+	lookFrom := Vec3{13, 3, 3}
+	lookAt := Vec3{0, 2, 0}
+	up := Vec3{Y: 1}
+	focusDist := 10.0
+	aperture := 0.0
+	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, 0, 1)
+
+	objects := Collection{
+		Actor{
+			shape: Sphere{
+				Center: Vec3{Y: -1000},
+				Radius: 1000,
+			},
+			material: Lambertian{
+				albedo: ConstantTexture{Vec3{0.8, 0.8, 0.8}},
+			},
+		},
+		Actor{
+			shape: Sphere{
+				Center: Vec3{X: 5, Y: 2, Z: 3},
+				Radius: 2,
+			},
+			material: Lambertian{
+				Marble{
+					noise:      opensimplex.New(51),
+					depth:      7,
+					turbulence: 5,
+					scale:      4,
+				},
+			},
+		},
+		Actor{
+			shape: Sphere{
+				Center: Vec3{X: 7, Y: 4, Z: -1},
+				Radius: 1,
+			},
+			material: DiffuseLight{
+				ConstantTexture{WHITE.Scale(5)},
+			},
+		},
+	}
+	// TODO index building should be transparent
+	world := NewIndex(objects, 0, len(objects)-1, 0, 1)
+	background := BLACK
+	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter, background}
 }

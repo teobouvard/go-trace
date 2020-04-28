@@ -25,6 +25,7 @@ Scatter
 */
 type Material interface {
 	Scatter(ray Ray, hit HitRecord) (bool, Vec3, Ray)
+	Emit(u, v float64, pos Vec3) Vec3
 }
 
 // Lambertian is a diffuse material
@@ -38,6 +39,11 @@ func (l Lambertian) Scatter(ray Ray, hit HitRecord) (bool, Vec3, Ray) {
 	scattered := Ray{hit.Position, scatterDirection, ray.Time}
 	attenuation := l.albedo.Value(hit.U, hit.V, hit.Position)
 	return true, attenuation, scattered
+}
+
+// Emit defines how a Lambertian emits light (it doesn't)
+func (l Lambertian) Emit(u, v float64, pos Vec3) Vec3 {
+	return BLACK
 }
 
 // Metal is a reflective material
@@ -62,6 +68,11 @@ func (m Metal) Scatter(ray Ray, record HitRecord) (bool, Vec3, Ray) {
 	attenuation := m.albedo
 	scatters := scattered.Direction.Dot(record.Normal) > 0
 	return scatters, attenuation, scattered
+}
+
+// Emit defines how a Metal emits light (it doesn't)
+func (m Metal) Emit(u, v float64, pos Vec3) Vec3 {
+	return BLACK
 }
 
 // Dielectric is a glass-like material
@@ -98,11 +109,31 @@ func (d Dielectric) Scatter(ray Ray, hit HitRecord) (bool, Vec3, Ray) {
 	wasRefracted, refracted := incidentDirection.Refract(outNormal, nRatio)
 	var direction Vec3
 	if wasRefracted && rand.Float64() >= shlick(cosTheta, nRatio) {
-		// refraction possible
+		// refraction possible + shlick probability
 		direction = refracted
 	} else {
 		// reflection
 		direction = incidentDirection.Reflect(outNormal)
 	}
 	return true, WHITE, Ray{hit.Position, direction, ray.Time}
+}
+
+// Emit defines how a lambertian emits light (it doesn't)
+func (d Dielectric) Emit(u, v float64, pos Vec3) Vec3 {
+	return BLACK
+}
+
+// DiffuseLight is a light-emitting material
+type DiffuseLight struct {
+	emit Texture
+}
+
+// Scatter implements the scatter interface for a DiffuseLight material
+func (l DiffuseLight) Scatter(ray Ray, hit HitRecord) (bool, Vec3, Ray) {
+	return false, Vec3{}, Ray{}
+}
+
+// Emit implements the emit interface for a DiffuseLight material
+func (l DiffuseLight) Emit(u, v float64, pos Vec3) Vec3 {
+	return l.emit.Value(u, v, pos)
 }

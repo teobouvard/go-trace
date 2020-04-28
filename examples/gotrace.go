@@ -23,6 +23,6 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	scene := gotrace.EarthScene()
+	scene := gotrace.LightMarbleScene()
 	scene.Render()
 }

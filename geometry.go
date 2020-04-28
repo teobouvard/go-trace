@@ -151,3 +151,33 @@ func (s MovingSphere) Bound(startTime float64, endTime float64) (bool, *Bbox) {
 	box := startBox.Merge(stopBox)
 	return true, &box
 }
+
+// RectXY is a rectangular shape in the XY plane (z=k), bounded by x0, x1, y0 and y1
+type RectXY struct {
+	x0, x1 float64
+	y0, y1 float64
+	k      float64
+}
+
+// Hit implements the geometry interface for RectXY
+func (r RectXY) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
+	t := (r.k - ray.Origin.Z) / ray.Direction.Z
+	if t < tMin || t > tMax {
+		return false, nil
+	}
+	x := ray.Origin.X + t*ray.Direction.X
+	y := ray.Origin.Y + t*ray.Direction.Y
+	if x < r.x0 || x > r.x1 || y < r.y0 || y > r.y1 {
+		return false, nil
+	}
+	u := (x - r.x0) / (r.x1 - r.x0)
+	v := (y - r.y0) / (r.y1 - r.y0)
+
+	// TODO don't forget to check for normal direction in scatter
+	return true, &HitRecord{Distance: t, Position: ray.At(t), U: u, V: v, Normal: Vec3{Z: 1}}
+}
+
+// Bound returns the bounding box of a RectXY
+func (r RectXY) Bound(startTime float64, endTime float64) (bool, *Bbox) {
+	return true, &Bbox{Vec3{r.x0, r.y0, r.k - 1e-4}, Vec3{r.x1, r.y1, r.k + 1e-4}}
+}
