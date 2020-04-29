@@ -23,6 +23,6 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	scene := gotrace.LightMarbleScene()
+	scene := gotrace.CornellBox()
 	scene.Render()
 }

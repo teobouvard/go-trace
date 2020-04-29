@@ -181,3 +181,82 @@ func (r RectXY) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
 func (r RectXY) Bound(startTime float64, endTime float64) (bool, *Bbox) {
 	return true, &Bbox{Vec3{r.x0, r.y0, r.k - 1e-4}, Vec3{r.x1, r.y1, r.k + 1e-4}}
 }
+
+// RectXZ is a rectangular shape in the XZ plane (y=k), bounded by x0, x1, z0 and z1
+type RectXZ struct {
+	x0, x1 float64
+	z0, z1 float64
+	k      float64
+}
+
+// Hit implements the geometry interface for RectXY
+func (r RectXZ) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
+	t := (r.k - ray.Origin.Y) / ray.Direction.Y
+	if t < tMin || t > tMax {
+		return false, nil
+	}
+	x := ray.Origin.X + t*ray.Direction.X
+	z := ray.Origin.Z + t*ray.Direction.Z
+	if x < r.x0 || x > r.x1 || z < r.z0 || z > r.z1 {
+		return false, nil
+	}
+	u := (x - r.x0) / (r.x1 - r.x0)
+	v := (z - r.z0) / (r.z1 - r.z0)
+
+	// TODO don't forget to check for normal direction in scatter
+	return true, &HitRecord{Distance: t, Position: ray.At(t), U: u, V: v, Normal: Vec3{Y: 1}}
+}
+
+// Bound returns the bounding box of a RectXZ
+func (r RectXZ) Bound(startTime float64, endTime float64) (bool, *Bbox) {
+	return true, &Bbox{Vec3{r.x0, r.k - 1e-4, r.z0}, Vec3{r.x1, r.k + 1e-4, r.z1}}
+}
+
+// RectYZ is a rectangular shape in the YZ plane (x=k), bounded by y0, y1, z0 and z1
+type RectYZ struct {
+	y0, y1 float64
+	z0, z1 float64
+	k      float64
+}
+
+// Hit implements the geometry interface for RectYZ
+func (r RectYZ) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
+	t := (r.k - ray.Origin.X) / ray.Direction.X
+	if t < tMin || t > tMax {
+		return false, nil
+	}
+	y := ray.Origin.Y + t*ray.Direction.Y
+	z := ray.Origin.Z + t*ray.Direction.Z
+	if y < r.y0 || y > r.y1 || z < r.z0 || z > r.z1 {
+		return false, nil
+	}
+	u := (y - r.y0) / (r.y1 - r.y0)
+	v := (z - r.z0) / (r.z1 - r.z0)
+
+	// TODO don't forget to check for normal direction in scatter
+	return true, &HitRecord{Distance: t, Position: ray.At(t), U: u, V: v, Normal: Vec3{X: 1}}
+}
+
+// Bound returns the bounding box of a RectXZ
+func (r RectYZ) Bound(startTime float64, endTime float64) (bool, *Bbox) {
+	return true, &Bbox{Vec3{r.k - 1e-4, r.y0, r.z0}, Vec3{r.k + 1e-4, r.y1, r.z1}}
+}
+
+// FlipFace is a geometry wrapper for flipping the front face of the initial geometry
+type FlipFace struct {
+	reversed Geometry
+}
+
+// Hit returns the hit of the inital geometry, but with the opposed record normal
+func (f FlipFace) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
+	hit, rec := f.reversed.Hit(ray, tMin, tMax)
+	if rec != nil {
+		rec.Normal = rec.Normal.Scale(-1)
+	}
+	return hit, rec
+}
+
+// Bound returns the bounding box of a the initial geometry
+func (f FlipFace) Bound(startTime float64, endTime float64) (bool, *Bbox) {
+	return f.reversed.Bound(startTime, endTime)
+}

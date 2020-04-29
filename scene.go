@@ -485,3 +485,70 @@ func LightMarbleScene() Scene {
 	background := BLACK
 	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter, background}
 }
+
+// CornellBox is a the classic cornell box scene
+func CornellBox() Scene {
+	imageWidth := 1000
+	imageHeight := 1000
+	pixelSamples := 2000
+	maxScatter := 100
+
+	// camera settings
+	aspectRatio := float64(imageWidth) / float64(imageHeight)
+	fov := 40.0
+	lookFrom := Vec3{278, 278, -800}
+	lookAt := Vec3{278, 278, 0}
+	up := Vec3{Y: 1}
+	focusDist := 10.0
+	aperture := 0.0
+	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, 0, 1)
+
+	objects := Collection{
+		Actor{
+			shape: FlipFace{RectYZ{0, 555, 0, 555, 555}},
+			material: Lambertian{
+				// left wall - green
+				albedo: ConstantTexture{Vec3{0.12, 0.45, 0.15}},
+			},
+		},
+		Actor{
+			shape: RectYZ{0, 555, 0, 555, 0},
+			material: Lambertian{
+				// right wall - red
+				albedo: ConstantTexture{Vec3{0.65, 0.05, 0.05}},
+			},
+		},
+		Actor{
+			shape: RectXZ{213, 343, 227, 332, 554},
+			material: DiffuseLight{
+				// roof light
+				emit: ConstantTexture{WHITE.Scale(15)},
+			},
+		},
+		Actor{
+			shape: RectXZ{0, 555, 0, 555, 0},
+			material: Lambertian{
+				// floor
+				albedo: ConstantTexture{WHITE},
+			},
+		},
+		Actor{
+			shape: FlipFace{RectXZ{0, 555, 0, 555, 555}},
+			material: Lambertian{
+				// ceiling
+				albedo: ConstantTexture{WHITE},
+			},
+		},
+		Actor{
+			shape: FlipFace{RectXY{0, 555, 0, 555, 555}},
+			material: Lambertian{
+				// back wall
+				albedo: ConstantTexture{WHITE},
+			},
+		},
+	}
+	// TODO index building should be transparent
+	world := NewIndex(objects, 0, len(objects)-1, 0, 1)
+	background := BLACK
+	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter, background}
+}
