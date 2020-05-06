@@ -2,14 +2,14 @@ package gotrace
 
 import (
 	"context"
-	"fmt"
 	"image"
 	"image/draw"
 	_ "image/jpeg"
-	"image/png"
+	"log"
 	"math"
 	"math/rand"
 	"os"
+	"runtime"
 
 	"github.com/cheggaaa/pb/v3"
 	"github.com/ojrac/opensimplex-go"
@@ -18,16 +18,22 @@ import (
 
 // Scene is the whole scene to be rendered
 type Scene struct {
-	world        Index
-	camera       Camera
-	pixelSamples int
-	width        int
-	height       int
-	maxScatter   int
-	background   Vec3
+	world      Index
+	camera     Camera
+	background Vec3
 }
 
-func (s Scene) rayColor(ray Ray, depth int) Vec3 {
+// NewScene creates a scene that can be rendered. It contains all actors in the world collection, and is viewed from the camera.
+func NewScene(camera Camera, world Collection, background Vec3) *Scene {
+	return &Scene{
+		world:      NewIndex(world, 0, len(world)-1, camera.tStart, camera.tStop),
+		camera:     camera,
+		background: background,
+	}
+
+}
+
+func (s *Scene) rayColor(ray Ray, depth int) Vec3 {
 	if depth <= 0 {
 		// too many scattered bounces, assume absorption
 		return BLACK
@@ -40,43 +46,52 @@ func (s Scene) rayColor(ray Ray, depth int) Vec3 {
 		}
 		return emitted
 	}
-	return s.background
 
-	/*
-		// background white-blue lerp
-		unitDirection := ray.Direction.Unit()
-		t := 0.5 * (unitDirection.Y + 1.0)
-		return WHITE.Scale(1.0 - t).Add(Vec3{0.4, 0.5, 0.75}.Scale(t))
-	*/
+	return s.background
 }
 
-// Render renders the scene
-func (s Scene) Render() {
+// Render renders the scene with the given parameters
+func (s *Scene) Render(width, height, pixelSamples, maxScatter int) *image.RGBA {
+	// set default value for max number of ray bounces before absorption
+	if maxScatter <= 0 {
+		maxScatter = 50
+	}
+
+	if pixelSamples <= 0 {
+		pixelSamples = 50
+	}
+
+	// deduce height from aspect ratio
+	if height == -1 {
+		height = int(float64(width) / s.camera.AspectRatio)
+	}
+
 	// create image
 	upLeft := image.Point{0, 0}
-	lowRight := image.Point{s.width, s.height}
+	lowRight := image.Point{width, height}
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
 
-	// create workgroup
+	// create workgroup to render one line per available thread
 	ctx := context.TODO()
-	nWorkers := int64(1)
+	nWorkers := int64(runtime.NumCPU())
 	sem := semaphore.NewWeighted(nWorkers)
-	bar := pb.StartNew(s.height)
-	for j := 0; j < s.height; j++ {
-		sem.Acquire(ctx, 1)
+	bar := pb.StartNew(height)
+	for j := 0; j < height; j++ {
+		sem.Acquire(ctx, 1) // why not in goroutine ?
 		go func(j int) {
 			defer sem.Release(1)
-			for i := 0; i < s.width; i++ {
+			for i := 0; i < width; i++ {
 				pixel := BLACK
-				for k := 0; k < s.pixelSamples; k++ {
-					u := (float64(i) + rand.Float64()) / float64(s.width)
-					v := (float64(j) + rand.Float64()) / float64(s.height)
+				for k := 0; k < pixelSamples; k++ {
+					u := (float64(i) + rand.Float64()) / float64(width)
+					v := (float64(j) + rand.Float64()) / float64(height)
 					ray := s.camera.RayTo(u, v)
-					pixel = pixel.Add(s.rayColor(ray, s.maxScatter))
+					pixel = pixel.Add(s.rayColor(ray, maxScatter))
 				}
 				// set image color
-				imgColor := pixel.GetColor(s.pixelSamples)
-				img.Set(i, s.height-j-1, imgColor)
+				imgColor := pixel.GetColor(pixelSamples)
+				// why isn't there a data race if access to the image is not protected ?
+				img.Set(i, height-j-1, imgColor)
 			}
 			bar.Increment()
 		}(j)
@@ -85,25 +100,13 @@ func (s Scene) Render() {
 	// wait for all workers to exit
 	sem.Acquire(ctx, nWorkers)
 	bar.Finish()
-
-	// write image
-	os.Remove("img/image.png")
-	f, _ := os.Create("img/image.png")
-	png.Encode(f, img)
+	return img
 }
 
 // BookScene creates the scene on the cover of the first book
-func BookScene() Scene {
-	// image settings
-	//imageWidth := 1440
-	//imageHeight := 1080
-	imageWidth := 200
-	imageHeight := 100
-	pixelSamples := 100
-	maxScatter := 50
-
+func BookScene() *Scene {
 	// camera settings
-	aspectRatio := float64(imageWidth) / float64(imageHeight)
+	aspectRatio := 2.0
 	fov := 20.0
 	lookFrom := Vec3{13, 2, 3}
 	lookAt := Vec3{0, 0, 0}
@@ -207,30 +210,22 @@ func BookScene() Scene {
 		},
 	)
 
-	world := NewIndex(objects, 0, len(objects)-1, 0, 1)
-	background := WHITE
-	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter, background}
+	return NewScene(camera, objects, WHITE)
 }
 
 // MovingSpheres creates the scene on the cover of the first book, with bouncing balls
-func MovingSpheres() Scene {
-	// image settings
-	//imageWidth := 1440
-	//imageHeight := 1080
-	imageWidth := 200
-	imageHeight := 100
-	pixelSamples := 100
-	maxScatter := 50
-
+func MovingSpheres() *Scene {
 	// camera settings
-	aspectRatio := float64(imageWidth) / float64(imageHeight)
+	aspectRatio := 2.0
 	fov := 20.0
 	lookFrom := Vec3{13, 2, 3}
 	lookAt := Vec3{0, 0, 0}
 	up := Vec3{Y: 1}
 	focusDist := 10.0
 	aperture := 0.0
-	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, 0, 1)
+	startTime := 0.0
+	endTime := 1.0
+	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, startTime, endTime)
 
 	// objects on the scene
 	world := Collection{
@@ -262,8 +257,8 @@ func MovingSpheres() Scene {
 						shape: MovingSphere{
 							CenterStart: center,
 							CenterStop:  center.Add(Vec3{Y: rand.Float64() / 2.0}),
-							tStart:      0,
-							tStop:       1,
+							tStart:      startTime,
+							tStop:       endTime,
 							Radius:      0.2,
 						},
 						material: Lambertian{
@@ -333,20 +328,13 @@ func MovingSpheres() Scene {
 			},
 		},
 	)
-	index := NewIndex(world, 0, len(world)-1, 0, 1)
-	background := Vec3{0.8, 0.8, 0.8}
-	return Scene{index, camera, pixelSamples, imageWidth, imageHeight, maxScatter, background}
+
+	return NewScene(camera, world, WHITE)
 }
 
 // MarbleScene is a scene with a black and white marble
-func MarbleScene() Scene {
-	imageWidth := 200
-	imageHeight := 100
-	pixelSamples := 100
-	maxScatter := 50
-
-	// camera settings
-	aspectRatio := float64(imageWidth) / float64(imageHeight)
+func MarbleScene() *Scene {
+	aspectRatio := 16.0 / 9.0
 	fov := 33.0
 	lookFrom := Vec3{13, 2, 3}
 	lookAt := Vec3{0, 2, 0}
@@ -371,21 +359,14 @@ func MarbleScene() Scene {
 			},
 		},
 	}
-	// TODO index building should be transparent
-	world := NewIndex(objects, 0, len(objects)-1, 0, 1)
-	background := WHITE
-	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter, background}
+
+	return NewScene(camera, objects, WHITE)
 }
 
 // EarthScene is a scene demonstrating image textures
-func EarthScene() Scene {
-	imageWidth := 200
-	imageHeight := 100
-	pixelSamples := 100
-	maxScatter := 50
-
+func EarthScene() *Scene {
 	// camera settings
-	aspectRatio := float64(imageWidth) / float64(imageHeight)
+	aspectRatio := 2.0
 	fov := 33.0
 	lookFrom := Vec3{13, 2, 3}
 	lookAt := Vec3{0, 2, 0}
@@ -394,12 +375,14 @@ func EarthScene() Scene {
 	aperture := 0.0
 	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, 0, 1)
 
-	fp, filerr := os.Open("./assets/blue_marble_september.jpg")
-	src, str, err := image.Decode(fp)
-	fmt.Print(str, filerr, err)
-	b := src.Bounds()
-	image := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
-	draw.Draw(image, image.Bounds(), src, b.Min, draw.Src)
+	f, err := os.Open("./assets/blue_marble_september.jpg")
+	src, _, err := image.Decode(f)
+	if err != nil {
+		log.Fatal(err)
+	}
+	bounds := src.Bounds()
+	img := image.NewRGBA(image.Rect(0, 0, bounds.Dx(), bounds.Dy()))
+	draw.Draw(img, img.Bounds(), src, bounds.Min, draw.Src)
 
 	objects := Collection{
 		Actor{
@@ -418,26 +401,19 @@ func EarthScene() Scene {
 			},
 			material: Lambertian{
 				Image{
-					data: image,
+					data: img,
 				},
 			},
 		},
 	}
-	// TODO index building should be transparent
-	world := NewIndex(objects, 0, len(objects)-1, 0, 1)
-	background := WHITE
-	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter, background}
+
+	return NewScene(camera, objects, WHITE)
 }
 
 // LightMarbleScene is a scene with a black and white marble with lights
-func LightMarbleScene() Scene {
-	imageWidth := 200
-	imageHeight := 100
-	pixelSamples := 200
-	maxScatter := 100
-
+func LightMarbleScene() *Scene {
 	// camera settings
-	aspectRatio := float64(imageWidth) / float64(imageHeight)
+	aspectRatio := 2.0
 	fov := 50.0
 	lookFrom := Vec3{13, 3, 3}
 	lookAt := Vec3{0, 2, 0}
@@ -480,21 +456,14 @@ func LightMarbleScene() Scene {
 			},
 		},
 	}
-	// TODO index building should be transparent
-	world := NewIndex(objects, 0, len(objects)-1, 0, 1)
-	background := BLACK
-	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter, background}
+
+	return NewScene(camera, objects, WHITE)
 }
 
 // CornellBox is a the classic cornell box scene
-func CornellBox() Scene {
-	imageWidth := 1000
-	imageHeight := 1000
-	pixelSamples := 2000
-	maxScatter := 100
-
+func CornellBox() *Scene {
 	// camera settings
-	aspectRatio := float64(imageWidth) / float64(imageHeight)
+	aspectRatio := 1.0
 	fov := 40.0
 	lookFrom := Vec3{278, 278, -800}
 	lookAt := Vec3{278, 278, 0}
@@ -547,8 +516,5 @@ func CornellBox() Scene {
 			},
 		},
 	}
-	// TODO index building should be transparent
-	world := NewIndex(objects, 0, len(objects)-1, 0, 1)
-	background := BLACK
-	return Scene{world, camera, pixelSamples, imageWidth, imageHeight, maxScatter, background}
+	return NewScene(camera, objects, BLACK)
 }

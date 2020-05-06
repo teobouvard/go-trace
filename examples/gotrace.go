@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"image/png"
 	"log"
 	"os"
 	"runtime/pprof"
@@ -9,13 +11,18 @@ import (
 	"github.com/teobouvard/gotrace"
 )
 
-var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+var (
+	cpuProfile  = flag.String("profile", "perf", "write cpu profile to file")
+	outputImage = flag.String("output", "render.png", "output rendered image to file")
+)
 
 func main() {
 	flag.Parse()
 
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
+	// execution profiling
+	// use go tool pprof perf, and web/topX
+	if *cpuProfile != "" {
+		f, err := os.Create(*cpuProfile)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -23,6 +30,18 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	scene := gotrace.CornellBox()
-	scene.Render()
+	if *outputImage != "" {
+		if _, err := os.Stat(*outputImage); os.IsExist(err) {
+			fmt.Println("Output file already exists")
+		} else {
+			f, err := os.Create(*outputImage)
+			if err != nil {
+				log.Fatal(err)
+			}
+			scene := gotrace.CornellBox()
+			img := scene.Render(400, -1, 500, 50)
+			png.Encode(f, img)
+		}
+	}
+
 }

@@ -8,7 +8,7 @@ Package gotrace is a simple raytracer inspired by Peter Shirley's books.
 
   func main() {
     scene := gotrace.BookScene()
-    scene.Render()
+    scene.Render(400, -1, 500, 50)
   }
 
 */

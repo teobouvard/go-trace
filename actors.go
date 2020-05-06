@@ -129,7 +129,7 @@ func NewIndex(world Collection, start, end int, startTime, endTime float64) Inde
 		idx.right = NewIndex(world, mid, end, startTime, endTime)
 	}
 
-	_, leftBox := idx.left.Bound(startTime, endTime) // TODO error handling if no box
+	_, leftBox := idx.left.Bound(startTime, endTime) // TODO error handling if no box (infinite planes)
 	_, rightBox := idx.right.Bound(startTime, endTime)
 	idx.box = leftBox.Merge(*rightBox)
 	return idx

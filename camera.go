@@ -5,7 +5,7 @@ import (
 	"math/rand"
 )
 
-// Camera represents the camera of the scene
+// Camera is the eye looking at the the scene
 type Camera struct {
 	origin        Vec3
 	horizontal    Vec3
@@ -14,6 +14,7 @@ type Camera struct {
 	u, v, w       Vec3
 	lensRadius    float64
 	tStart, tStop float64
+	AspectRatio   float64
 }
 
 // NewCamera creates a camera
@@ -32,16 +33,17 @@ func NewCamera(lookFrom, lookAt, up Vec3, verticalFOV, aspectRatio, aperture, fo
 	corner := lookFrom.Sub(u.Scale(width * focusDist)).Sub(v.Scale(height * focusDist)).Sub(w.Scale(focusDist))
 
 	return Camera{
-		origin:     lookFrom,
-		horizontal: horizontal,
-		vertical:   vertical,
-		corner:     corner,
-		u:          u,
-		v:          v,
-		w:          w,
-		lensRadius: aperture / 2.0,
-		tStart:     tStart,
-		tStop:      tStop,
+		origin:      lookFrom,
+		horizontal:  horizontal,
+		vertical:    vertical,
+		corner:      corner,
+		u:           u,
+		v:           v,
+		w:           w,
+		lensRadius:  aperture / 2.0,
+		tStart:      tStart,
+		tStop:       tStop,
+		AspectRatio: aspectRatio,
 	}
 }
 
