@@ -1,9 +1,9 @@
 # images
 img/
-.png
+*.png
 
 # binaries
 gotrace
 
 # performance reports
-perf
+*perf*

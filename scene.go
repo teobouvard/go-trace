@@ -18,7 +18,7 @@ import (
 
 // Scene is the whole scene to be rendered
 type Scene struct {
-	world      Index
+	world      *Index
 	camera     Camera
 	background Vec3
 }
@@ -80,12 +80,13 @@ func (s *Scene) Render(width, height, pixelSamples, maxScatter int) *image.RGBA 
 		sem.Acquire(ctx, 1) // why not in goroutine ?
 		go func(j int) {
 			defer sem.Release(1)
+			rnd := rand.New(rand.NewSource(int64(42 * j)))
 			for i := 0; i < width; i++ {
 				pixel := BLACK
 				for k := 0; k < pixelSamples; k++ {
-					u := (float64(i) + rand.Float64()) / float64(width)
-					v := (float64(j) + rand.Float64()) / float64(height)
-					ray := s.camera.RayTo(u, v)
+					u := (float64(i) + rnd.Float64()) / float64(width)
+					v := (float64(j) + rnd.Float64()) / float64(height)
+					ray := s.camera.RayTo(u, v, rnd)
 					pixel = pixel.Add(s.rayColor(ray, maxScatter))
 				}
 				// set image color
@@ -115,6 +116,7 @@ func BookScene() *Scene {
 	aperture := 0.1
 	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, 0, 1)
 
+	rnd := rand.New(rand.NewSource(42))
 	// objects on the scene
 	objects := Collection{
 		{
@@ -136,7 +138,7 @@ func BookScene() *Scene {
 			if center.Sub(noBalls).Norm() > 0.9 {
 				if randMaterial < 0.8 {
 					// diffuse
-					albedo := RandVec().Mul(RandVec())
+					albedo := RandVec(rnd).Mul(RandVec(rnd))
 					actor := Actor{
 						shape: Sphere{
 							Center: center,
@@ -149,7 +151,7 @@ func BookScene() *Scene {
 					objects.Add(actor)
 				} else if randMaterial < 0.95 {
 					//metal
-					albedo := RandVecInterval(0.5, 1.0)
+					albedo := RandVecInterval(0.5, 1.0, rnd)
 					fuzz := rand.Float64() / 2
 					actor := Actor{
 						shape: Sphere{
@@ -228,6 +230,7 @@ func MovingSpheres() *Scene {
 	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, startTime, endTime)
 
 	// objects on the scene
+	rnd := rand.New(rand.NewSource(42))
 	world := Collection{
 		{
 			shape: Sphere{
@@ -252,7 +255,7 @@ func MovingSpheres() *Scene {
 			if center.Sub(noBalls).Norm() > 0.9 {
 				if randMaterial < 0.8 {
 					// diffuse
-					albedo := RandVec().Mul(RandVec())
+					albedo := RandVec(rnd).Mul(RandVec(rnd))
 					actor := Actor{
 						shape: MovingSphere{
 							CenterStart: center,
@@ -268,7 +271,7 @@ func MovingSpheres() *Scene {
 					world.Add(actor)
 				} else if randMaterial < 0.95 {
 					//metal
-					albedo := RandVecInterval(0.5, 1.0)
+					albedo := RandVecInterval(0.5, 1.0, rnd)
 					fuzz := rand.Float64() / 2
 					actor := Actor{
 						shape: Sphere{

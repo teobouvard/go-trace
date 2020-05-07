@@ -105,7 +105,7 @@ type Index struct {
 }
 
 // NewIndex builds a bounding volume hierarchy
-func NewIndex(world Collection, start, end int, startTime, endTime float64) Index {
+func NewIndex(world Collection, start, end int, startTime, endTime float64) *Index {
 	// chose random axis for sorting
 	comparator := world.Comparator(startTime, endTime, rand.Intn(3))
 
@@ -132,11 +132,11 @@ func NewIndex(world Collection, start, end int, startTime, endTime float64) Inde
 	_, leftBox := idx.left.Bound(startTime, endTime) // TODO error handling if no box (infinite planes)
 	_, rightBox := idx.right.Bound(startTime, endTime)
 	idx.box = leftBox.Merge(*rightBox)
-	return idx
+	return &idx
 }
 
 // Hit implements the hit interface for the Index
-func (idx Index) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
+func (idx *Index) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
 	if !idx.box.Hit(ray, tMin, tMax) {
 		return false, nil
 	}
@@ -154,6 +154,6 @@ func (idx Index) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
 }
 
 // Bound returns the bounding box of the Index
-func (idx Index) Bound(tMin float64, tMax float64) (bool, *Bbox) {
+func (idx *Index) Bound(tMin float64, tMax float64) (bool, *Bbox) {
 	return true, &idx.box
 }

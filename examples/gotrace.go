@@ -38,8 +38,8 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			scene := gotrace.CornellBox()
-			img := scene.Render(400, -1, 500, 50)
+			scene := gotrace.BookScene()
+			img := scene.Render(400, -1, 50, 50)
 			png.Encode(f, img)
 		}
 	}

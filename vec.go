@@ -123,9 +123,12 @@ func (u Vec3) SquareNorm() float64 {
 }
 
 // RandSphere returns vector drawn from a lambertian distribution inside the unit sphere
-func RandSphere() Vec3 {
-	a := 2.0 * rand.Float64() * math.Pi
-	z := 2.0 * (rand.Float64() - 0.5)
+func RandSphere(rnd *rand.Rand) Vec3 {
+	if rnd == nil {
+		panic("No random source")
+	}
+	a := 2.0 * rnd.Float64() * math.Pi
+	z := 2.0 * (rnd.Float64() - 0.5)
 	r := math.Sqrt(1 - z*z)
 	return Vec3{
 		r * math.Cos(a),
@@ -135,22 +138,31 @@ func RandSphere() Vec3 {
 }
 
 // RandDisk returns a random vector in the unit disk
-func RandDisk() Vec3 {
-	theta := 2 * math.Pi * rand.Float64()
-	r := rand.Float64()
+func RandDisk(rnd *rand.Rand) Vec3 {
+	if rnd == nil {
+		panic("No random source")
+	}
+	theta := 2 * math.Pi * rnd.Float64()
+	r := rnd.Float64()
 	return Vec3{X: r * math.Cos(theta), Y: r * math.Sin(theta)}
 }
 
 // RandVec returns a random vector with coordinates in [0, 1)
-func RandVec() Vec3 {
-	return Vec3{rand.Float64(), rand.Float64(), rand.Float64()}
+func RandVec(rnd *rand.Rand) Vec3 {
+	if rnd == nil {
+		panic("No random source")
+	}
+	return Vec3{rnd.Float64(), rnd.Float64(), rnd.Float64()}
 }
 
 // RandVecInterval returns a random vector with coordinates in [low, high)
-func RandVecInterval(low float64, high float64) Vec3 {
-	x := rand.Float64()*(high-low) + low
-	y := rand.Float64()*(high-low) + low
-	z := rand.Float64()*(high-low) + low
+func RandVecInterval(low float64, high float64, rnd *rand.Rand) Vec3 {
+	if rnd == nil {
+		panic("No random source")
+	}
+	x := rnd.Float64()*(high-low) + low
+	y := rnd.Float64()*(high-low) + low
+	z := rnd.Float64()*(high-low) + low
 	return Vec3{x, y, z}
 }
 

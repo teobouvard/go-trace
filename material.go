@@ -2,7 +2,6 @@ package gotrace
 
 import (
 	"math"
-	"math/rand"
 
 	"github.com/teobouvard/gotrace/util"
 )
@@ -35,8 +34,8 @@ type Lambertian struct {
 
 // Scatter defines how a lambertian material scatters a Ray
 func (l Lambertian) Scatter(ray Ray, hit HitRecord) (bool, Vec3, Ray) {
-	scatterDirection := hit.Normal.Add(RandSphere())
-	scattered := Ray{hit.Position, scatterDirection, ray.Time}
+	scatterDirection := hit.Normal.Add(RandSphere(ray.RandSource))
+	scattered := Ray{hit.Position, scatterDirection, ray.Time, ray.RandSource}
 	attenuation := l.albedo.Value(hit.U, hit.V, hit.Position)
 	return true, attenuation, scattered
 }
@@ -63,8 +62,8 @@ func NewMetal(albedo Vec3, fuzz float64) Metal {
 // Scatter defines the behaviour of rays when they hit Metal material
 func (m Metal) Scatter(ray Ray, record HitRecord) (bool, Vec3, Ray) {
 	reflectedDirection := ray.Direction.Unit().Reflect(record.Normal)
-	fuzziness := RandSphere().Scale(m.fuzz)
-	scattered := Ray{record.Position, reflectedDirection.Add(fuzziness), ray.Time}
+	fuzziness := RandSphere(ray.RandSource).Scale(m.fuzz)
+	scattered := Ray{record.Position, reflectedDirection.Add(fuzziness), ray.Time, ray.RandSource}
 	attenuation := m.albedo
 	scatters := scattered.Direction.Dot(record.Normal) > 0
 	return scatters, attenuation, scattered
@@ -108,14 +107,14 @@ func (d Dielectric) Scatter(ray Ray, hit HitRecord) (bool, Vec3, Ray) {
 	incidentDirection := ray.Direction.Unit()
 	wasRefracted, refracted := incidentDirection.Refract(outNormal, nRatio)
 	var direction Vec3
-	if wasRefracted && rand.Float64() >= shlick(cosTheta, nRatio) {
+	if wasRefracted && ray.RandSource.Float64() >= shlick(cosTheta, nRatio) {
 		// refraction possible + shlick probability
 		direction = refracted
 	} else {
 		// reflection
 		direction = incidentDirection.Reflect(outNormal)
 	}
-	return true, WHITE, Ray{hit.Position, direction, ray.Time}
+	return true, WHITE, Ray{hit.Position, direction, ray.Time, ray.RandSource}
 }
 
 // Emit defines how a lambertian emits light (it doesn't)

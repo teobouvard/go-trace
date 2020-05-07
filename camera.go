@@ -48,14 +48,15 @@ func NewCamera(lookFrom, lookAt, up Vec3, verticalFOV, aspectRatio, aperture, fo
 }
 
 // RayTo returns the Ray when the camera looks at (u, v)
-func (c Camera) RayTo(s float64, t float64) Ray {
-	rd := RandDisk().Scale(c.lensRadius)
+func (c Camera) RayTo(s float64, t float64, rnd *rand.Rand) Ray {
+	rd := RandDisk(rnd).Scale(c.lensRadius)
 	offset := c.u.Scale(rd.X).Add(c.v.Scale(rd.Y))
 	hOffset := c.horizontal.Scale(s)
 	vOffset := c.vertical.Scale(t)
 	return Ray{
-		Origin:    c.origin.Add(offset),
-		Direction: c.corner.Add(hOffset).Add(vOffset).Sub(c.origin).Sub(offset),
-		Time:      rand.Float64()*(c.tStop-c.tStart) + c.tStart,
+		Origin:     c.origin.Add(offset),
+		Direction:  c.corner.Add(hOffset).Add(vOffset).Sub(c.origin).Sub(offset),
+		Time:       rnd.Float64()*(c.tStop-c.tStart) + c.tStart,
+		RandSource: rnd,
 	}
 }
