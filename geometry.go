@@ -39,7 +39,7 @@ type Sphere struct {
 	Radius float64
 }
 
-// computes the location of the hit as "pixel" coordinates
+// computes the location of the hit as "pixel" coordinates for texture mapping
 func (s Sphere) pixelHit(pos Vec3) (u, v float64) {
 	phi := math.Atan2(pos.Z, pos.X)
 	theta := math.Asin(pos.Y)
@@ -259,4 +259,51 @@ func (f FlipFace) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
 // Bound returns the bounding box of a the initial geometry
 func (f FlipFace) Bound(startTime float64, endTime float64) (bool, *Bbox) {
 	return f.reversed.Bound(startTime, endTime)
+}
+
+// Box is a cube
+type Box struct {
+	minPoint Vec3
+	maxPoint Vec3
+	sides    []Geometry
+}
+
+// NewBox constructs a box from its extreme points
+func NewBox(p0, p1 Vec3) Box {
+	sides := []Geometry{
+		RectXY{p0.X, p1.X, p0.Y, p1.Y, p1.Z},
+		FlipFace{RectXY{p0.X, p1.X, p0.Y, p1.Y, p0.Z}},
+		RectXZ{p0.X, p1.X, p0.Z, p1.Z, p1.Y},
+		FlipFace{RectXZ{p0.X, p1.X, p0.Z, p1.Z, p0.Y}},
+		RectYZ{p0.Y, p1.Y, p0.Z, p1.Z, p1.X},
+		FlipFace{RectYZ{p0.Y, p1.Y, p0.Z, p1.Z, p0.X}},
+	}
+
+	return Box{
+		minPoint: p0,
+		maxPoint: p1,
+		sides:    sides,
+	}
+}
+
+// Hit implements the geometry interface for a Box
+func (b Box) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
+	hitAnything := false
+	closestHit := tMax
+	var closestRecord *HitRecord = nil
+
+	for _, side := range b.sides {
+		if hit, record := side.Hit(ray, tMin, closestHit); hit {
+			closestRecord = record
+			closestHit = record.Distance
+			hitAnything = true
+		}
+	}
+
+	return hitAnything, closestRecord
+}
+
+// Bound returns the bounding box of the Box
+func (b Box) Bound(startTime float64, endTime float64) (bool, *Bbox) {
+	return true, &Bbox{b.minPoint, b.maxPoint}
 }

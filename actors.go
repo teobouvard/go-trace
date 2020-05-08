@@ -34,7 +34,7 @@ func (a Actor) Bound(startTime float64, endTime float64) (bool, *Bbox) {
 	return a.shape.Bound(startTime, endTime)
 }
 
-// Collection represents a collection of Actors
+// Collection represents a ensemble of Actors
 type Collection []Actor
 
 // Add appends actors to the collection

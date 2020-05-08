@@ -476,45 +476,59 @@ func CornellBox() *Scene {
 	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, 0, 1)
 
 	objects := Collection{
+		// left wall - green
 		Actor{
 			shape: FlipFace{RectYZ{0, 555, 0, 555, 555}},
 			material: Lambertian{
-				// left wall - green
 				albedo: ConstantTexture{Vec3{0.12, 0.45, 0.15}},
 			},
 		},
+		// right wall - red
 		Actor{
 			shape: RectYZ{0, 555, 0, 555, 0},
 			material: Lambertian{
-				// right wall - red
 				albedo: ConstantTexture{Vec3{0.65, 0.05, 0.05}},
 			},
 		},
+		// roof light
 		Actor{
 			shape: RectXZ{213, 343, 227, 332, 554},
 			material: DiffuseLight{
-				// roof light
 				emit: ConstantTexture{WHITE.Scale(15)},
 			},
 		},
+		// floor
 		Actor{
 			shape: RectXZ{0, 555, 0, 555, 0},
 			material: Lambertian{
-				// floor
 				albedo: ConstantTexture{WHITE},
 			},
 		},
+		// ceiling
 		Actor{
 			shape: FlipFace{RectXZ{0, 555, 0, 555, 555}},
 			material: Lambertian{
-				// ceiling
 				albedo: ConstantTexture{WHITE},
 			},
 		},
+		// back wall
 		Actor{
 			shape: FlipFace{RectXY{0, 555, 0, 555, 555}},
 			material: Lambertian{
-				// back wall
+				albedo: ConstantTexture{WHITE},
+			},
+		},
+		// Front box
+		Actor{
+			shape: NewBox(Vec3{130, 0, 65}, Vec3{295, 165, 230}),
+			material: Lambertian{
+				albedo: ConstantTexture{WHITE},
+			},
+		},
+		// Back box
+		Actor{
+			shape: NewBox(Vec3{265, 0, 295}, Vec3{430, 330, 460}),
+			material: Lambertian{
 				albedo: ConstantTexture{WHITE},
 			},
 		},
