@@ -112,6 +112,16 @@ func (u Vec3) Unit() Vec3 {
 	return u.Div(u.Norm())
 }
 
+// MinCoord returns a new vector corresponding to the element-wise minimum of the two vectors
+func MinCoord(u Vec3, v Vec3) Vec3 {
+	return Vec3{math.Min(u.X, v.X), math.Min(u.Y, v.Y), math.Min(u.Z, v.Z)}
+}
+
+// MaxCoord returns a new vector corresponding to the element-wise maximum of the two vectors
+func MaxCoord(u Vec3, v Vec3) Vec3 {
+	return Vec3{math.Max(u.X, v.X), math.Max(u.Y, v.Y), math.Max(u.Z, v.Z)}
+}
+
 // Norm returns the euclidean norm of u
 func (u Vec3) Norm() float64 {
 	return math.Sqrt(u.SquareNorm())

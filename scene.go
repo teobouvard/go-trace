@@ -501,35 +501,41 @@ func CornellBox() *Scene {
 		Actor{
 			shape: RectXZ{0, 555, 0, 555, 0},
 			material: Lambertian{
-				albedo: ConstantTexture{WHITE},
+				albedo: ConstantTexture{Vec3{0.73, 0.73, 0.73}},
 			},
 		},
 		// ceiling
 		Actor{
 			shape: FlipFace{RectXZ{0, 555, 0, 555, 555}},
 			material: Lambertian{
-				albedo: ConstantTexture{WHITE},
+				albedo: ConstantTexture{Vec3{0.73, 0.73, 0.73}},
 			},
 		},
 		// back wall
 		Actor{
 			shape: FlipFace{RectXY{0, 555, 0, 555, 555}},
 			material: Lambertian{
-				albedo: ConstantTexture{WHITE},
+				albedo: ConstantTexture{Vec3{0.73, 0.73, 0.73}},
 			},
 		},
-		// Front box
+		// back box
 		Actor{
-			shape: NewBox(Vec3{130, 0, 65}, Vec3{295, 165, 230}),
+			shape: Translate{
+				shape:  NewRotateY(NewBox(Vec3{0, 0, 0}, Vec3{165, 330, 165}), 15),
+				offset: Vec3{265, 0, 295},
+			},
 			material: Lambertian{
-				albedo: ConstantTexture{WHITE},
+				albedo: ConstantTexture{Vec3{0.73, 0.73, 0.73}},
 			},
 		},
-		// Back box
+		// front box
 		Actor{
-			shape: NewBox(Vec3{265, 0, 295}, Vec3{430, 330, 460}),
+			shape: Translate{
+				shape:  NewRotateY(NewBox(Vec3{0, 0, 0}, Vec3{165, 165, 165}), -18),
+				offset: Vec3{130, 0, 165},
+			},
 			material: Lambertian{
-				albedo: ConstantTexture{WHITE},
+				albedo: ConstantTexture{Vec3{0.73, 0.73, 0.73}},
 			},
 		},
 	}

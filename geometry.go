@@ -242,7 +242,7 @@ func (r RectYZ) Bound(startTime float64, endTime float64) (bool, *Bbox) {
 	return true, &Bbox{Vec3{r.k - 1e-4, r.y0, r.z0}, Vec3{r.k + 1e-4, r.y1, r.z1}}
 }
 
-// FlipFace is a geometry wrapper for flipping the front face of the initial geometry
+// FlipFace is a geometry wrapper for flipping the front face of the wrapped geometry
 type FlipFace struct {
 	reversed Geometry
 }
@@ -306,4 +306,107 @@ func (b Box) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
 // Bound returns the bounding box of the Box
 func (b Box) Bound(startTime float64, endTime float64) (bool, *Bbox) {
 	return true, &Bbox{b.minPoint, b.maxPoint}
+}
+
+// Translate is a wrapper around a geometry, which is offset by a translation vector
+type Translate struct {
+	shape  Geometry
+	offset Vec3
+}
+
+// Hit implements the geometry interface for a Translated object
+// It does so by offsetting the ray rather than the wrapped object
+func (t Translate) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
+	movedRay := Ray{ray.Origin.Sub(t.offset), ray.Direction, ray.Time, ray.RandSource}
+	if hit, record := t.shape.Hit(movedRay, tMin, tMax); hit {
+		record.Position = record.Position.Add(t.offset)
+		return true, record
+	}
+	return false, nil
+}
+
+// Bound returns the bounding box of a translated geometry
+func (t Translate) Bound(startTime float64, endTime float64) (bool, *Bbox) {
+	if isBounded, bbox := t.shape.Bound(startTime, endTime); isBounded {
+		return true, &Bbox{bbox.Min.Add(t.offset), bbox.Max.Add(t.offset)}
+	}
+	return false, nil
+}
+
+// RotateY is a wrapper around a geometry, which is rotated around the Y axis
+type RotateY struct {
+	shape    Geometry
+	sinTheta float64
+	cosTheta float64
+	bbox     Bbox
+	hasBox   bool
+}
+
+// NewRotateY constructs a rotated object around the Y axis
+func NewRotateY(shape Geometry, angle float64) Geometry {
+	theta := angle * math.Pi / 180.0
+	sinTheta := math.Sin(theta)
+	cosTheta := math.Cos(theta)
+
+	hasBox, box := shape.Bound(0, 1) // TODO time should not be guessed here
+	minPoint := Vec3{math.MaxFloat64, math.MaxFloat64, math.MaxFloat64}
+	maxPoint := Vec3{-math.MaxFloat64, -math.MaxFloat64, -math.MaxFloat64}
+
+	for i := 0; i < 2; i++ {
+		for j := 0; j < 2; j++ {
+			for k := 0; k < 2; k++ {
+				x := float64(i)*box.Max.X + (1.0-float64(i))*box.Min.X
+				y := float64(j)*box.Max.Y + (1.0-float64(j))*box.Min.Y
+				z := float64(k)*box.Max.Z + (1.0-float64(k))*box.Min.Z
+
+				tmpx := cosTheta*x + sinTheta*z
+				tmpz := -sinTheta*x + cosTheta*z
+
+				tmpvec := Vec3{tmpx, y, tmpz}
+				minPoint = MinCoord(minPoint, tmpvec)
+				maxPoint = MinCoord(maxPoint, tmpvec)
+			}
+		}
+	}
+
+	return RotateY{
+		shape:    shape,
+		sinTheta: sinTheta,
+		cosTheta: cosTheta,
+		hasBox:   hasBox,
+		bbox:     Bbox{minPoint, maxPoint},
+	}
+}
+
+// Hit implements the geometry interface for a Rotated object (around Y axis)
+func (r RotateY) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
+	origin := ray.Origin
+	direction := ray.Direction
+
+	origin.X = r.cosTheta*ray.Origin.X - r.sinTheta*ray.Origin.Z
+	origin.Z = r.sinTheta*ray.Origin.X + r.cosTheta*ray.Origin.Z
+
+	direction.X = r.cosTheta*ray.Direction.X - r.sinTheta*ray.Direction.Z
+	direction.Z = r.sinTheta*ray.Direction.X + r.cosTheta*ray.Direction.Z
+
+	rotatedRay := Ray{origin, direction, ray.Time, ray.RandSource}
+
+	if hit, record := r.shape.Hit(rotatedRay, tMin, tMax); hit {
+		pos := record.Position
+		n := record.Normal
+
+		pos.X = r.cosTheta*record.Position.X - r.sinTheta*record.Position.Z
+		pos.Z = -r.sinTheta*record.Position.X + r.cosTheta*record.Position.Z
+
+		n.X = r.cosTheta*record.Normal.X - r.sinTheta*record.Normal.Z
+		n.Z = -r.sinTheta*record.Normal.X + r.cosTheta*record.Normal.Z
+
+		return true, &HitRecord{Distance: record.Distance, Position: pos, Normal: n} // TODO recompute distance ?
+	}
+	return false, nil
+}
+
+// Bound returns the bounding box of a rotated geometry
+func (r RotateY) Bound(startTime float64, endTime float64) (bool, *Bbox) {
+	return r.hasBox, &r.bbox
 }

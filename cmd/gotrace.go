@@ -39,7 +39,7 @@ func main() {
 				log.Fatal(err)
 			}
 			scene := gotrace.CornellBox()
-			img := scene.Render(200, -1, 200, 50)
+			img := scene.Render(2000, -1, 5000, 100)
 			png.Encode(f, img)
 		}
 	}
