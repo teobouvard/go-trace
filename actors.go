@@ -109,7 +109,7 @@ func NewIndex(world Collection, start, end int, startTime, endTime float64) *Ind
 	// chose random axis for sorting
 	comparator := world.Comparator(startTime, endTime, rand.Intn(3))
 
-	var idx Index
+	idx := Index{}
 	span := end - start + 1
 	if span == 1 {
 		idx.left = world[start]
@@ -123,7 +123,7 @@ func NewIndex(world Collection, start, end int, startTime, endTime float64) *Ind
 			idx.right = world[start]
 		}
 	} else {
-		sort.Slice(world, comparator) //TODO does this sort the view or the slice ?
+		sort.Slice(world[start:end], comparator) //TODO does this sort the view or the slice ?
 		mid := start + span/2
 		idx.left = NewIndex(world, start, mid, startTime, endTime)
 		idx.right = NewIndex(world, mid, end, startTime, endTime)

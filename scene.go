@@ -13,6 +13,7 @@ import (
 
 	"github.com/cheggaaa/pb/v3"
 	"github.com/ojrac/opensimplex-go"
+	"github.com/teobouvard/gotrace/util"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -625,4 +626,46 @@ func FoggyCornellBox() *Scene {
 		},
 	}
 	return NewScene(camera, objects, BLACK)
+}
+
+// FinalScene is the last scene of Ray Tracing: The Next Week
+func FinalScene() *Scene {
+	// camera settings
+	aspectRatio := 1.0
+	fov := 40.0
+	lookFrom := Vec3{478, 278, -600}
+	lookAt := Vec3{278, 278, 0}
+	up := Vec3{Y: 1}
+	focusDist := 10.0
+	aperture := 0.0
+	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, 0, 1)
+
+	objects := Collection{
+		//light
+		Actor{
+			shape: RectXZ{123, 423, 147, 412, 554},
+			material: DiffuseLight{
+				emit: ConstantTexture{WHITE.Scale(7)},
+			},
+		},
+	}
+
+	// steps of random height on the ground
+	groundMaterial := Lambertian{ConstantTexture{Vec3{0.48, 0.83, 0.53}}}
+	const boxesPerSide int = 20
+	for i := 0; i < boxesPerSide; i++ {
+		for j := 0; j < boxesPerSide; j++ {
+			w := 100.0
+			x0 := -1000.0 + float64(i)*w
+			x1 := x0 + w
+			z0 := -1000.0 + float64(j)*w
+			z1 := z0 + w
+			y0 := 0.0
+			y1 := util.Map(rand.Float64(), 0, 1, 1, 100)
+			box := NewBox(Vec3{x0, y0, z0}, Vec3{x1, y1, z1})
+			objects.Add(Actor{box, groundMaterial})
+		}
+	}
+
+	return NewScene(camera, objects, WHITE.Scale(0.1))
 }
