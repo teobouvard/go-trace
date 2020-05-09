@@ -541,3 +541,88 @@ func CornellBox() *Scene {
 	}
 	return NewScene(camera, objects, BLACK)
 }
+
+// FoggyCornellBox is a the cornell box scene with fog objects
+func FoggyCornellBox() *Scene {
+	// camera settings
+	aspectRatio := 1.0
+	fov := 40.0
+	lookFrom := Vec3{278, 278, -800}
+	lookAt := Vec3{278, 278, 0}
+	up := Vec3{Y: 1}
+	focusDist := 10.0
+	aperture := 0.0
+	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, 0, 1)
+
+	objects := Collection{
+		// left wall - green
+		Actor{
+			shape: FlipFace{RectYZ{0, 555, 0, 555, 555}},
+			material: Lambertian{
+				albedo: ConstantTexture{Vec3{0.12, 0.45, 0.15}},
+			},
+		},
+		// right wall - red
+		Actor{
+			shape: RectYZ{0, 555, 0, 555, 0},
+			material: Lambertian{
+				albedo: ConstantTexture{Vec3{0.65, 0.05, 0.05}},
+			},
+		},
+		// roof light
+		Actor{
+			shape: RectXZ{213, 343, 227, 332, 554},
+			material: DiffuseLight{
+				emit: ConstantTexture{WHITE.Scale(15)},
+			},
+		},
+		// floor
+		Actor{
+			shape: RectXZ{0, 555, 0, 555, 0},
+			material: Lambertian{
+				albedo: ConstantTexture{Vec3{0.73, 0.73, 0.73}},
+			},
+		},
+		// ceiling
+		Actor{
+			shape: FlipFace{RectXZ{0, 555, 0, 555, 555}},
+			material: Lambertian{
+				albedo: ConstantTexture{Vec3{0.73, 0.73, 0.73}},
+			},
+		},
+		// back wall
+		Actor{
+			shape: FlipFace{RectXY{0, 555, 0, 555, 555}},
+			material: Lambertian{
+				albedo: ConstantTexture{Vec3{0.73, 0.73, 0.73}},
+			},
+		},
+		// back box
+		Actor{
+			shape: Fog{
+				Translate{
+					shape:  NewRotateY(NewBox(Vec3{0, 0, 0}, Vec3{165, 330, 165}), 15),
+					offset: Vec3{265, 0, 295},
+				},
+				0.005,
+			},
+			material: Isotropic{
+				albedo: ConstantTexture{BLACK},
+			},
+		},
+		// front box
+		Actor{
+			shape: Fog{
+				Translate{
+					shape:  NewRotateY(NewBox(Vec3{0, 0, 0}, Vec3{165, 165, 165}), -18),
+					offset: Vec3{130, 0, 165},
+				},
+				0.005,
+			},
+			material: Isotropic{
+				albedo: ConstantTexture{WHITE},
+			},
+		},
+	}
+	return NewScene(camera, objects, BLACK)
+}

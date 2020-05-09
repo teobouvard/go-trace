@@ -136,3 +136,20 @@ func (l DiffuseLight) Scatter(ray Ray, hit HitRecord) (bool, Vec3, Ray) {
 func (l DiffuseLight) Emit(u, v float64, pos Vec3) Vec3 {
 	return l.emit.Value(u, v, pos)
 }
+
+// Isotropic is a material scattering in random direction
+type Isotropic struct {
+	albedo Texture
+}
+
+// Scatter of isotropic material scatters a new ray in a random direction at the hit
+func (i Isotropic) Scatter(ray Ray, hit HitRecord) (bool, Vec3, Ray) {
+	return true,
+		i.albedo.Value(hit.U, hit.V, hit.Position),
+		Ray{hit.Position, RandSphere(ray.RandSource), ray.Time, ray.RandSource}
+}
+
+// Emit defines how an isotropic material doesn't emit light
+func (i Isotropic) Emit(u float64, v float64, pos Vec3) Vec3 {
+	return BLACK
+}

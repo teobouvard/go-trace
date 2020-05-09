@@ -410,3 +410,63 @@ func (r RotateY) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
 func (r RotateY) Bound(startTime float64, endTime float64) (bool, *Bbox) {
 	return r.hasBox, &r.bbox
 }
+
+// Fog is a volumetric medium
+type Fog struct {
+	boundary Geometry
+	density  float64
+}
+
+// Hit implements the geometry interface for volumetric medium
+func (f Fog) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
+	var (
+		hit       bool
+		firstHit  *HitRecord
+		secondHit *HitRecord
+	)
+
+	if hit, firstHit = f.boundary.Hit(ray, -math.MaxFloat64, math.MaxFloat64); !hit {
+		return false, nil
+	}
+
+	if hit, secondHit = f.boundary.Hit(ray, firstHit.Distance+0.0001, math.MaxFloat64); !hit {
+		return false, nil
+	}
+
+	if firstHit.Distance < tMin {
+		firstHit.Distance = tMin
+	}
+
+	if secondHit.Distance > tMax {
+		secondHit.Distance = tMax
+	}
+
+	if firstHit.Distance >= secondHit.Distance {
+		return false, nil
+	}
+
+	if firstHit.Distance < 0 {
+		firstHit.Distance = 0
+	}
+
+	rayLength := ray.Direction.Norm()
+	distanceInsideBoundary := (secondHit.Distance - firstHit.Distance) * rayLength
+	hitDistance := -math.Log(ray.RandSource.Float64()) / f.density
+
+	if hitDistance > distanceInsideBoundary {
+		return false, nil
+	}
+
+	t := firstHit.Distance + hitDistance/rayLength
+	p := ray.At(t)
+
+	// we dont bother computing a normal at the hit because materials used with
+	// fog scatter in random direction
+	return true, &HitRecord{Distance: t, Position: p}
+}
+
+// Bound returns the bounding box of the volumetric medium
+// Bounding box is delegated to the boundary geometry containing the fog
+func (f Fog) Bound(startTime float64, endTime float64) (bool, *Bbox) {
+	return f.boundary.Bound(startTime, endTime)
+}

@@ -1,6 +1,6 @@
 # gotrace
 
-![render of the book cover](assets/book_render.png)
+![render of the book cover](assets/cornell_box.jpg)
 
 `gotrace` is a Golang implementation of Peter Shirley's [excellent books on raytracing](https://raytracing.github.io/).
 
