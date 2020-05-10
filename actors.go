@@ -20,7 +20,7 @@ type Actor struct {
 	material Material
 }
 
-// Hit checks if the geometry is hit by the ray, and creates a hitrecord with its material
+// Hit checks if the geometry is hit by the ray, and creates a HitRecord with the actor's material
 func (a Actor) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
 	if hit, record := a.shape.Hit(ray, tMin, tMax); hit {
 		record.Material = a.material
@@ -29,20 +29,20 @@ func (a Actor) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
 	return false, nil
 }
 
-// Bound returns the bounding box of an actor
+// Bound returns the bounding box of an actor, which is defined by its shape
 func (a Actor) Bound(startTime float64, endTime float64) (bool, *Bbox) {
 	return a.shape.Bound(startTime, endTime)
 }
 
-// Collection represents a ensemble of Actors
+// A Collection is a group of Actors
 type Collection []Actor
 
-// Add appends actors to the collection
+// Add appends new Actors to the collection
 func (c *Collection) Add(actors ...Actor) {
 	*c = append(*c, actors...)
 }
 
-// Hit returns the closest hit record if an intersection was found
+// Hit returns the closest intersection of a Ray with a Collection if such an intersection exists, otherwise it returns false with a nil pointer
 func (c Collection) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) {
 	hitAnything := false
 	closestHit := tMax
@@ -59,7 +59,7 @@ func (c Collection) Hit(ray Ray, tMin float64, tMax float64) (bool, *HitRecord) 
 	return hitAnything, closestRecord
 }
 
-// Bound returns the bounding box of the Collection
+// Bound computes the bounding box of a Collection
 func (c Collection) Bound(tMin float64, tMax float64) (bool, *Bbox) {
 	if len(c) == 0 {
 		return false, nil

@@ -76,7 +76,7 @@ func (m Metal) Emit(u, v float64, pos Vec3) Vec3 {
 
 // Dielectric is a glass-like material
 type Dielectric struct {
-	n float64
+	n float64 // refraction index
 }
 
 func shlick(cosine float64, nRatio float64) float64 {

@@ -120,7 +120,7 @@ func BookScene() *Scene {
 	rnd := rand.New(rand.NewSource(42))
 	// objects on the scene
 	objects := Collection{
-		{
+		Actor{
 			shape: Sphere{
 				Center: Vec3{X: 0, Y: -1000, Z: 0},
 				Radius: 1000,
@@ -233,7 +233,7 @@ func MovingSpheres() *Scene {
 	// objects on the scene
 	rnd := rand.New(rand.NewSource(42))
 	world := Collection{
-		{
+		Actor{
 			shape: Sphere{
 				Center: Vec3{X: 0, Y: -1000, Z: 0},
 				Radius: 1000,
@@ -379,7 +379,7 @@ func EarthScene() *Scene {
 	aperture := 0.0
 	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, 0, 1)
 
-	f, err := os.Open("./assets/blue_marble_september.jpg")
+	f, err := os.Open("assets/blue_marble.jpg")
 	src, _, err := image.Decode(f)
 	if err != nil {
 		log.Fatal(err)
@@ -641,12 +641,70 @@ func FinalScene() *Scene {
 	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, 0, 1)
 
 	objects := Collection{
-		//light
+		// ambient fog
+		Actor{
+			shape: Fog{
+				boundary: Sphere{Vec3{}, 5000},
+				density:  0.0001,
+			},
+			material: Isotropic{ConstantTexture{WHITE}},
+		},
+		// ceiling light
 		Actor{
 			shape: RectXZ{123, 423, 147, 412, 554},
 			material: DiffuseLight{
 				emit: ConstantTexture{WHITE.Scale(7)},
 			},
+		},
+		// moving sphere
+		Actor{
+			shape: MovingSphere{
+				CenterStart: Vec3{400, 400, 200},
+				CenterStop:  Vec3{430, 400, 200},
+				Radius:      50,
+				tStart:      0,
+				tStop:       1,
+			},
+			material: Lambertian{ConstantTexture{Vec3{0.7, 0.3, 0.1}}},
+		},
+		// glass sphere
+		Actor{
+			shape:    Sphere{Vec3{180, 180, 145}, 50},
+			material: Dielectric{1.5},
+		},
+		// metal sphere
+		Actor{
+			shape:    Sphere{Vec3{0, 150, 145}, 50},
+			material: Metal{Vec3{0.8, 0.8, 0.9}, 10},
+		},
+		// subsurface sphere
+		Actor{
+			shape:    Sphere{Vec3{360, 150, 145}, 50},
+			material: Dielectric{1.5},
+		},
+		Actor{
+			shape: Fog{
+				boundary: Sphere{Vec3{360, 150, 145}, 50},
+				density:  0.2,
+			},
+			material: Isotropic{ConstantTexture{Vec3{0.2, 0.4, 0.9}}},
+		},
+		// marble
+		Actor{
+			shape: Sphere{Vec3{220, 280, 300}, 80},
+			material: Lambertian{
+				Marble{
+					noise:      opensimplex.New(42),
+					depth:      7,
+					turbulence: 11,
+					scale:      0.005,
+				},
+			},
+		},
+		// earth
+		Actor{
+			shape:    Sphere{Vec3{400, 200, 400}, 100},
+			material: Lambertian{NewImage("assets/blue_marble.jpg")},
 		},
 	}
 
@@ -667,5 +725,19 @@ func FinalScene() *Scene {
 		}
 	}
 
-	return NewScene(camera, objects, WHITE.Scale(0.1))
+	// balls in rotated bounding cube
+	whitish := Lambertian{ConstantTexture{Vec3{0.73, 0.73, 0.73}}}
+	nSpheres := 1000
+	randSource := rand.New(rand.NewSource(42))
+	rotation := -15.0 * math.Pi / 180.0
+	for i := 0; i < nSpheres; i++ {
+		offset := Vec3{-100, 270, 395}
+		center := RandVecInterval(0, 165, randSource)
+		center.X = center.X*math.Cos(rotation) - center.Z*math.Sin(rotation)
+		center.Z = center.Z*math.Cos(rotation) + center.X*math.Sin(rotation)
+		sphere := Sphere{center.Add(offset), 10}
+		objects.Add(Actor{sphere, whitish})
+	}
+
+	return NewScene(camera, objects, BLACK)
 }

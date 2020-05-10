@@ -5,7 +5,7 @@ import (
 	"math/rand"
 )
 
-// Camera is the eye looking at the the scene
+// A Camera is the eye through which the the scene is observed
 type Camera struct {
 	origin        Vec3
 	horizontal    Vec3
@@ -47,7 +47,8 @@ func NewCamera(lookFrom, lookAt, up Vec3, verticalFOV, aspectRatio, aperture, fo
 	}
 }
 
-// RayTo returns the Ray when the camera looks at (u, v)
+// RayTo casts a Ray from the camera to the given (u, v) coordinates
+// the Ray is cast at a random time during the camera lens' opening
 func (c Camera) RayTo(s float64, t float64, rnd *rand.Rand) Ray {
 	rd := RandDisk(rnd).Scale(c.lensRadius)
 	offset := c.u.Scale(rd.X).Add(c.v.Scale(rd.Y))

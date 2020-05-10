@@ -2,7 +2,10 @@ package gotrace
 
 import (
 	"image"
+	"image/draw"
+	"log"
 	"math"
+	"os"
 
 	"github.com/ojrac/opensimplex-go"
 	"github.com/teobouvard/gotrace/util"
@@ -78,7 +81,7 @@ func (t Marble) genTurbulence(pos Vec3) float64 {
 	freq := pos
 	weight := 1.0
 	for i := 0; i < t.depth; i++ {
-		sum += weight * t.noise.Eval3(freq.X, freq.Y, freq.Z)
+		sum += weight * t.noise.Eval3(t.scale*freq.X, t.scale*freq.Y, t.scale*freq.Z)
 		weight *= 0.5
 		freq = freq.Scale(2)
 	}
@@ -94,6 +97,19 @@ func (t Marble) Value(u, v float64, pos Vec3) Vec3 {
 // Image is a texture mapped to an image file
 type Image struct {
 	data image.Image
+}
+
+// NewImage creates an image texture from the path to the image
+func NewImage(file string) Image {
+	f, err := os.Open(file)
+	src, _, err := image.Decode(f)
+	if err != nil {
+		log.Fatal(err)
+	}
+	bounds := src.Bounds()
+	img := image.NewRGBA(image.Rect(0, 0, bounds.Dx(), bounds.Dy()))
+	draw.Draw(img, img.Bounds(), src, bounds.Min, draw.Src)
+	return Image{img}
 }
 
 // Value implements the texture interface for an Image texture

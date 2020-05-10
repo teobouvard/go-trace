@@ -38,9 +38,10 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
+			//scene := gotrace.LightMarbleScene()
 			scene := gotrace.FinalScene()
 			//img := scene.Render(2000, -1, 5000, 100)
-			img := scene.Render(200, -1, 500, 50)
+			img := scene.Render(300, -1, 50, 50)
 			png.Encode(f, img)
 		}
 	}
