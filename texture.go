@@ -96,11 +96,14 @@ func (t Marble) Value(u, v float64, pos Vec3) Vec3 {
 
 // Image is a texture mapped to an image file
 type Image struct {
-	data image.Image
+	data    image.Image
+	xoffset float64
+	yoffset float64
 }
 
-// NewImage creates an image texture from the path to the image
-func NewImage(file string) Image {
+// NewImage creates an image texture from the path to the image, and an offset on the x axis
+// The offset is given as a percentage of the width
+func NewImage(file string, xoffset, yoffset float64) Image {
 	f, err := os.Open(file)
 	src, _, err := image.Decode(f)
 	if err != nil {
@@ -109,7 +112,7 @@ func NewImage(file string) Image {
 	bounds := src.Bounds()
 	img := image.NewRGBA(image.Rect(0, 0, bounds.Dx(), bounds.Dy()))
 	draw.Draw(img, img.Bounds(), src, bounds.Min, draw.Src)
-	return Image{img}
+	return Image{img, xoffset / 100.0, yoffset / 100.0}
 }
 
 // Value implements the texture interface for an Image texture
@@ -118,6 +121,8 @@ func (t Image) Value(u, v float64, pos Vec3) Vec3 {
 	height := t.data.Bounds().Max.Y - 1
 	x := int(util.Map(u, 0, 1, 0, float64(width)))
 	y := int(util.Map(v, 0, 1, 0, float64(height)))
+	x = int(float64(x)+t.xoffset*float64(width)) % width
+	y = int(float64(y)+t.yoffset*float64(height)) % height
 	color := t.data.At(x, height-y)
 	r, g, b, _ := color.RGBA()
 	return Vec3{float64(r) / 65535, float64(g) / 65535, float64(b) / 65535}

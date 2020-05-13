@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	_ "image/jpeg"
 	"image/png"
 	"log"
 	"os"
@@ -12,6 +13,7 @@ import (
 )
 
 var (
+	// TODO add quality options and scene parsing from file
 	cpuProfile  = flag.String("profile", "perf", "write cpu profile to file")
 	outputImage = flag.String("output", "render.png", "output rendered image to file")
 )
@@ -38,10 +40,9 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			//scene := gotrace.LightMarbleScene()
 			scene := gotrace.FinalScene()
-			//img := scene.Render(2000, -1, 5000, 100)
-			img := scene.Render(300, -1, 50, 50)
+			img := scene.Render(2000, -1, 5000, 100)
+			//img := scene.Render(300, -1, 50, 50)
 			png.Encode(f, img)
 		}
 	}

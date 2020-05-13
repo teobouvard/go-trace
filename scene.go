@@ -3,12 +3,8 @@ package gotrace
 import (
 	"context"
 	"image"
-	"image/draw"
-	_ "image/jpeg"
-	"log"
 	"math"
 	"math/rand"
-	"os"
 	"runtime"
 
 	"github.com/cheggaaa/pb/v3"
@@ -379,15 +375,6 @@ func EarthScene() *Scene {
 	aperture := 0.0
 	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, 0, 1)
 
-	f, err := os.Open("assets/blue_marble.jpg")
-	src, _, err := image.Decode(f)
-	if err != nil {
-		log.Fatal(err)
-	}
-	bounds := src.Bounds()
-	img := image.NewRGBA(image.Rect(0, 0, bounds.Dx(), bounds.Dy()))
-	draw.Draw(img, img.Bounds(), src, bounds.Min, draw.Src)
-
 	objects := Collection{
 		Actor{
 			shape: Sphere{
@@ -404,9 +391,7 @@ func EarthScene() *Scene {
 				Radius: 2,
 			},
 			material: Lambertian{
-				Image{
-					data: img,
-				},
+				NewImage("assets/blue_marble.jpg", 0, 0),
 			},
 		},
 	}
@@ -631,7 +616,7 @@ func FoggyCornellBox() *Scene {
 // FinalScene is the last scene of Ray Tracing: The Next Week
 func FinalScene() *Scene {
 	// camera settings
-	aspectRatio := 1.0
+	aspectRatio := 4.0 / 3.0
 	fov := 40.0
 	lookFrom := Vec3{478, 278, -600}
 	lookAt := Vec3{278, 278, 0}
@@ -641,6 +626,13 @@ func FinalScene() *Scene {
 	camera := NewCamera(lookFrom, lookAt, up, fov, aspectRatio, aperture, focusDist, 0, 1)
 
 	objects := Collection{
+		// ceiling light
+		Actor{
+			shape: RectXZ{123, 423, 147, 412, 554},
+			material: DiffuseLight{
+				emit: ConstantTexture{WHITE.Scale(7)},
+			},
+		},
 		// ambient fog
 		Actor{
 			shape: Fog{
@@ -649,23 +641,16 @@ func FinalScene() *Scene {
 			},
 			material: Isotropic{ConstantTexture{WHITE}},
 		},
-		// ceiling light
-		Actor{
-			shape: RectXZ{123, 423, 147, 412, 554},
-			material: DiffuseLight{
-				emit: ConstantTexture{WHITE.Scale(7)},
-			},
-		},
 		// moving sphere
 		Actor{
 			shape: MovingSphere{
 				CenterStart: Vec3{400, 400, 200},
-				CenterStop:  Vec3{430, 400, 200},
+				CenterStop:  Vec3{440, 400, 200},
 				Radius:      50,
 				tStart:      0,
 				tStop:       1,
 			},
-			material: Lambertian{ConstantTexture{Vec3{0.7, 0.3, 0.1}}},
+			material: Lambertian{ConstantTexture{Vec3{0.4, 0.0, 0.4}}},
 		},
 		// glass sphere
 		Actor{
@@ -674,20 +659,20 @@ func FinalScene() *Scene {
 		},
 		// metal sphere
 		Actor{
-			shape:    Sphere{Vec3{0, 150, 145}, 50},
+			shape:    Sphere{Vec3{-50, 160, 145}, 50},
 			material: Metal{Vec3{0.8, 0.8, 0.9}, 10},
 		},
-		// subsurface sphere
+		// red subsurface sphere
 		Actor{
-			shape:    Sphere{Vec3{360, 150, 145}, 50},
+			shape:    Sphere{Vec3{360, 150, 120}, 50},
 			material: Dielectric{1.5},
 		},
 		Actor{
 			shape: Fog{
-				boundary: Sphere{Vec3{360, 150, 145}, 50},
+				boundary: Sphere{Vec3{360, 150, 120}, 50},
 				density:  0.2,
 			},
-			material: Isotropic{ConstantTexture{Vec3{0.2, 0.4, 0.9}}},
+			material: Isotropic{ConstantTexture{Vec3{0.8, 0.0, 0.0}}},
 		},
 		// marble
 		Actor{
@@ -703,13 +688,14 @@ func FinalScene() *Scene {
 		},
 		// earth
 		Actor{
-			shape:    Sphere{Vec3{400, 200, 400}, 100},
-			material: Lambertian{NewImage("assets/blue_marble.jpg")},
+			shape:    Sphere{Vec3{450, 220, 400}, 100},
+			material: Lambertian{NewImage("assets/blue_marble.jpg", 70, 12)},
 		},
 	}
 
 	// steps of random height on the ground
-	groundMaterial := Lambertian{ConstantTexture{Vec3{0.48, 0.83, 0.53}}}
+	groundMaterial := Lambertian{ConstantTexture{Vec3{0, 0.2, 0.2}}}
+	//groundMaterial := Lambertian{ConstantTexture{WHITE.Scale(0.2)}}
 	const boxesPerSide int = 20
 	for i := 0; i < boxesPerSide; i++ {
 		for j := 0; j < boxesPerSide; j++ {
@@ -730,8 +716,8 @@ func FinalScene() *Scene {
 	nSpheres := 1000
 	randSource := rand.New(rand.NewSource(42))
 	rotation := -15.0 * math.Pi / 180.0
+	offset := Vec3{-190, 270, 395}
 	for i := 0; i < nSpheres; i++ {
-		offset := Vec3{-100, 270, 395}
 		center := RandVecInterval(0, 165, randSource)
 		center.X = center.X*math.Cos(rotation) - center.Z*math.Sin(rotation)
 		center.Z = center.Z*math.Cos(rotation) + center.X*math.Sin(rotation)
